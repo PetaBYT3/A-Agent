@@ -1,0 +1,114 @@
+[versions]
+agp = "9.2.1"
+coreKtx = "1.19.0"
+junit = "4.13.2"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
+lifecycleRuntimeKtx = "2.11.0"
+activityCompose = "1.13.0"
+kotlin = "2.2.10"
+composeBom = "2026.06.01"
+material3Version = "1.5.0-alpha23"
+
+koinVersion = "4.2.2"
+serializationVersion = "1.11.0"
+dataStoreVersion = "1.2.1"
+roomVersion = "2.8.4"
+arrowBomVersion = "2.2.3"
+splashVersion = "1.2.0"
+navigationVersion = "1.1.4"
+materialIconExtendedVersion = "1.7.8"
+reorderableVersion = "3.1.0"
+firebaseBomVersion = "34.15.0"
+ktorVersion = "3.5.1"
+cameraxVersion = "1.6.1"
+tasksGenAiVersion = "0.10.35"
+litertVersion = "0.13.1"
+
+kspVersion = "2.3.6"
+googleServicesVersion = "4.5.0"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Version" }
+
+#Koin Android
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinVersion" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinVersion" }
+koin-androidx-workmanager = { module = "io.insert-koin:koin-androidx-workmanager", version.ref = "koinVersion" }
+
+#Serialization
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationVersion" }
+
+#Data Store
+androidx-datastore-core = { module = "androidx.datastore:datastore-core", version.ref = "dataStoreVersion" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "dataStoreVersion" }
+
+#Room
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
+
+#Arrow
+arrow-bom = { module = "io.arrow-kt:arrow-stack", version.ref = "arrowBomVersion" }
+arrow-core = { module = "io.arrow-kt:arrow-core" }
+arrow-fx-coroutine = { module = "io.arrow-kt:arrow-fx-coroutines" }
+arrow-optics = { module = "io.arrow-kt:arrow-optics" }
+arrow-optics-ksp-plugin = { module = "io.arrow-kt:arrow-optics-ksp-plugin", version.ref = "arrowBomVersion" }
+
+#Splash Screen
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "splashVersion" }
+
+#Navigation
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigationVersion" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigationVersion" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleRuntimeKtx" }
+
+#Icon
+material-icon-extended = { module = "androidx.compose.material:material-icons-extended-android", version.ref = "materialIconExtendedVersion" }
+
+#Reorderable
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderableVersion" }
+
+#Firebase
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
+firebase-auth = { module = "com.google.firebase:firebase-auth" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+
+#Ktor
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorVersion" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktorVersion" }
+
+#CameraX
+camerax-core = { module = "androidx.camera:camera-core", version.ref = "cameraxVersion" }
+camerax-two = { module = "androidx.camera:camera-camera2", version.ref = "cameraxVersion" }
+camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraxVersion" }
+camerax-view = { module = "androidx.camera:camera-view", version.ref = "cameraxVersion" }
+
+#MediaPipe GenAI
+mediapipe-tasks-genai = { module = "com.google.mediapipe:tasks-genai", version.ref = "tasksGenAiVersion" }
+mediapipe-tasks-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "tasksGenAiVersion" }
+
+#LiteRT LM
+litert-genai = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertVersion" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+
+#Ksp
+ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
+plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServicesVersion" }
