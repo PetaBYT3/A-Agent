@@ -1,13 +1,13 @@
 package com.a.agent.domain.usecase.model
 
 import com.a.agent.data.remote.DownloadInfo
-import com.a.agent.domain.repository.ModelRepository
+import com.a.agent.domain.repository.LlmModelManagerRepository
 import kotlinx.coroutines.flow.Flow
 
 class DownloadState(
-    private val modelRepository: ModelRepository
+    private val llmModelManagerRepository: LlmModelManagerRepository
 ) {
     operator fun invoke(): Flow<Map<String, DownloadInfo>> {
-        return modelRepository.downloadState
+        return llmModelManagerRepository.activeDownloadInfo
     }
 }

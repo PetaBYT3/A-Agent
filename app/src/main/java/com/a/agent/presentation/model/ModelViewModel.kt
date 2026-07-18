@@ -4,7 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.a.agent.data.local.ModelEntity
-import com.a.agent.domain.repository.ModelRepository
+import com.a.agent.domain.model.LlmModelFilter
+import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.domain.usecase.ModelUseCases
 import com.a.agent.presentation.navigation.Event
 import com.a.agent.presentation.navigation.NavigationDisplayEvent
@@ -17,8 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ModelViewModel(
-    private val modelRepository: ModelRepository,
-    private val modelUseCases: ModelUseCases,
+    private val llmModelManagerRepository: LlmModelManagerRepository,
     private val navigationDisplayEvent: NavigationDisplayEvent
 ): ViewModel() {
     private val _state = MutableStateFlow(ModelState())
@@ -26,21 +26,29 @@ class ModelViewModel(
         initialize()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ModelState())
 
-    private fun initialize() = viewModelScope.launch {
-        coroutineScope {
-            launch {
-                viewModelScope.launch {
-                    modelRepository.downloadState.collect { map ->
-                        Log.d("DownloadDebugging", "Map: $map")
-                        _state.update { it.copy(downloadState = map) }
-                    }
+    private fun initialize() {
+        viewModelScope.launch {
+            llmModelManagerRepository.activeDownloadInfo.collect { map ->
+                _state.update { it.copy(downloadState = map) }
+            }
+        }
+
+        viewModelScope.launch {
+            llmModelManagerRepository.getModels(LlmModelFilter.Downloaded).collect { either ->
+                either.onRight { modelEntities ->
+                    _state.update { it.copy(downloadedModelEntities = modelEntities) }
+                }.onLeft { error ->
+                    _state.update { it.copy(downloadedModelError = error) }
                 }
             }
-            launch {
-                modelUseCases.getModels().collect { either ->
-                    either.onRight { modelEntities ->
-                        _state.update { it.copy(modelEntities = modelEntities) }
-                    }
+        }
+
+        viewModelScope.launch {
+            llmModelManagerRepository.getModels(LlmModelFilter.RequestDownload).collect { either ->
+                either.onRight { modelEntities ->
+                    _state.update { it.copy(requireDownloadModelEntities = modelEntities) }
+                }.onLeft { error ->
+                    _state.update { it.copy(requireDownloadModelError = error) }
                 }
             }
         }
@@ -53,10 +61,10 @@ class ModelViewModel(
     }
 
     private fun toggleDownload(modelEntity: ModelEntity) = viewModelScope.launch {
-        modelUseCases.toggleDownload(
-            modelEntity = modelEntity
-        ).onLeft { e ->
-            navigationDisplayEvent.sendEvent(Event.ShowSnackBar(e))
+        llmModelManagerRepository.toggleDownload(modelEntity).collect { either ->
+            either.onLeft { error ->
+                navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
+            }
         }
     }
 }

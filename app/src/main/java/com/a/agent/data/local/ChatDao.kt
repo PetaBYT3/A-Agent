@@ -10,9 +10,9 @@ interface ChatDao {
     @Upsert
     suspend fun upsertChat(chatEntity: ChatEntity)
 
-    @Query("SELECT * FROM chatEntity WHERE modelId = :modelId ORDER BY timeStamp ASC")
-    fun getChats(modelId: String): Flow<List<ChatEntity>>
+    @Query("SELECT * FROM chatEntity WHERE conversationId = :conversationId ORDER BY timeStamp ASC")
+    fun getChats(conversationId: String): Flow<List<ChatEntity>>
 
-    @Query("DELETE FROM chatEntity WHERE modelId = :modelId")
-    suspend fun clearChat(modelId: String)
+    @Query("DELETE FROM chatEntity WHERE conversationId = :conversationId")
+    suspend fun clearChat(conversationId: String)
 }

@@ -2,18 +2,24 @@
 
 package com.a.agent.presentation.util.component
 
+import android.graphics.drawable.Icon
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Dangerous
+import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.CardDefaults
@@ -28,9 +34,11 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -80,6 +88,25 @@ fun CustomSegmentedListItem(
     )
 }
 
+
+fun LazyListScope.listTitle(title: String) {
+    item {
+        Box(
+            modifier = Modifier
+                .clip(AbsoluteRoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            HeadlineText(
+                modifier = Modifier
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                text = title
+            )
+        }
+        Spacer(modifier = Modifier.height(5.dp))
+    }
+}
+
 fun LazyListScope.loadingIndicator() {
     item {
         Box(
@@ -96,25 +123,40 @@ fun LazyListScope.loadingIndicator() {
     }
 }
 
-fun LazyListScope.message(message: String, isError: Boolean = false) {
+enum class MessageType {
+    Info, Warning, Error
+}
+
+fun LazyListScope.message(message: String, messageType: MessageType = MessageType.Info) {
     item {
         CustomSegmentedListItem(
             modifier = Modifier
                 .animateItem(),
             leadingContent = {
                 Icon(
-                    tint = if (isError) MaterialTheme.colorScheme.error else LocalContentColor.current,
-                    imageVector = if (isError) Icons.Rounded.Warning else Icons.Rounded.Info,
+                    tint = when (messageType) {
+                        MessageType.Info -> LocalContentColor.current
+                        MessageType.Warning -> Color.Yellow
+                        MessageType.Error -> MaterialTheme.colorScheme.error
+                    },
+                    imageVector = when (messageType) {
+                        MessageType.Info -> Icons.Rounded.Info
+                        MessageType.Warning -> Icons.Rounded.Warning
+                        MessageType.Error -> Icons.Rounded.Error
+                    },
                     contentDescription = null
                 )
             },
             content = {
-                SupportingText(
-                    color = if (isError) MaterialTheme.colorScheme.error else Color.Unspecified,
-                    text = message,
-                    isSingleLine = false
+                Text(
+                    text = when (messageType) {
+                        MessageType.Info -> "Info"
+                        MessageType.Warning -> "Warning"
+                        MessageType.Error -> "Error"
+                    }
                 )
-            }
+            },
+            supportingContent = { Text(text = message) }
         )
     }
 }
@@ -131,6 +173,24 @@ fun LazyListScope.itemColumn(
                 .animateItem(),
             verticalArrangement = verticalArrangement,
             horizontalAlignment = horizontalAlignment
+        ) {
+            content()
+        }
+    }
+}
+
+fun LazyListScope.itemRow(
+    modifier: Modifier = Modifier,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
+    content: @Composable (RowScope.() -> Unit)
+) {
+    item {
+        Row(
+            modifier = modifier
+                .animateItem(),
+            verticalAlignment = verticalAlignment,
+            horizontalArrangement = horizontalArrangement
         ) {
             content()
         }

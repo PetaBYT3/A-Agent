@@ -6,12 +6,9 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -20,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
@@ -31,7 +27,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.a.agent.presentation.home.HomeScreen
 import com.a.agent.presentation.model.ModelScreen
 import com.a.agent.presentation.modelmanager.ModelManagerScreen
-import com.a.agent.presentation.texttotext.TextToTextScreen
+import com.a.agent.presentation.conversation.TextToTextScreen
 import com.a.agent.presentation.workflow.WorkFlowScreen
 import com.a.agent.presentation.workflowmanagerscreen.WorkflowManagerScreen
 import org.koin.compose.koinInject
@@ -136,11 +132,11 @@ fun NavigationDisplay(
                             ModelManagerScreen(navBackStack, route.modelId)
                         }
                     )
-                    is NavigationRoute.TextToTextScreen -> NavEntry(
+                    is NavigationRoute.ConversationScreen -> NavEntry(
                         key = navKey,
                         content = {
-                            val route = navKey as NavigationRoute.TextToTextScreen
-                            TextToTextScreen(navBackStack, route.modelId)
+                            val route = navKey as NavigationRoute.ConversationScreen
+                            TextToTextScreen(navBackStack, route.conversationId)
                         }
                     )
                 }

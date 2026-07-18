@@ -1,65 +1,118 @@
 package com.a.agent.presentation.home
 
-import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ChangeCircle
+import androidx.compose.material.icons.rounded.Circle
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.InsertDriveFile
+import androidx.compose.material.icons.rounded.List
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Repeat
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.ViewList
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedFilterChip
+import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import com.a.agent.data.local.ConversationEntity
+import com.a.agent.data.local.ModelEntity
 import com.a.agent.presentation.home.component.HomeMenuItem
+import com.a.agent.presentation.navigation.NavigationRoute
+import com.a.agent.presentation.util.component.AnimatedContentState
+import com.a.agent.presentation.util.component.CustomAnimatedContent
+import com.a.agent.presentation.util.component.CustomComposableBottomSheet
+import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
+import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomSurfaceIconButton
+import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.HeadlineText
+import com.a.agent.presentation.util.component.MessageType
 import com.a.agent.presentation.util.component.SupportingText
-import com.a.agent.presentation.util.component.TitleText
+import com.a.agent.presentation.util.component.itemColumn
+import com.a.agent.presentation.util.component.itemRow
+import com.a.agent.presentation.util.component.listTitle
+import com.a.agent.presentation.util.component.message
 import com.a.agent.presentation.util.component.spacer
+import com.a.agent.presentation.util.toMegaByte
+import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreen(
-    navBackStack: NavBackStack<NavKey>
+    navBackStack: NavBackStack<NavKey>,
+    viewModel: HomeViewModel = koinViewModel()
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val onAction = viewModel::onAction
+
     Screen(
-        navBackStack = navBackStack
+        navBackStack = navBackStack,
+        state = state,
+        onAction = onAction
     )
 }
 
 @Composable
 private fun Screen(
-    navBackStack: NavBackStack<NavKey>
+    navBackStack: NavBackStack<NavKey>,
+    state: HomeState,
+    onAction: (HomeAction) -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             CustomTopAppBar(
@@ -76,16 +129,63 @@ private fun Screen(
         content = { innerPadding ->
             Content(
                 navBackStack = navBackStack,
-                innerPadding = innerPadding
+                innerPadding = innerPadding,
+                state = state,
+                onAction = onAction
+            )
+        },
+        floatingActionButton = {
+            CustomFloatingActionButton(
+                onClick = { onAction(HomeAction.UpsertConversationBottomSheet) },
+                icon = Icons.Rounded.Add
             )
         }
+    )
+
+    CustomComposableBottomSheet(
+        isBottomSheetVisible = state.downloadedModelBottomSheet,
+        content = {
+            itemsIndexed(
+                items = state.downloadedModelEntities
+            ) { index, modelEntity ->
+                CustomSegmentedListItem(
+                    onClick = { onAction(HomeAction.SelectModel(modelEntity)) },
+                    index = index,
+                    count = state.downloadedModelEntities.size,
+                    content = { Text(text = modelEntity.name) }
+                )
+            }
+        },
+        confirmText = "Add Model",
+        onConfirm = {},
+        onCancel = { onAction(HomeAction.DownloadedModelBottomSheet) }
+    )
+
+    CustomComposableBottomSheet(
+        isBottomSheetVisible = state.upsertConversationBottomSheet,
+        content = {
+            itemColumn {
+                CustomTextField(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    label = { Text(text = "Title") },
+                    value = state.conversationNameTextField,
+                    onValueChange = { onAction(HomeAction.ConversationNameTextField(it)) }
+                )
+            }
+        },
+        confirmText = "Create Conversation",
+        onConfirm = { onAction(HomeAction.UpsertConversationButton) },
+        onCancel = { onAction(HomeAction.UpsertConversationBottomSheet) }
     )
 }
 
 @Composable
 private fun Content(
     navBackStack: NavBackStack<NavKey>,
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues,
+    state: HomeState,
+    onAction: (HomeAction) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -93,44 +193,122 @@ private fun Content(
         contentPadding = innerPadding + PaddingValues(start = 15.dp, end = 15.dp, bottom = 15.dp),
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
-        item {
-            CustomSegmentedListItem(
-                colors = ListItemDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    leadingContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    supportingContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                leadingContent = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(Icons.Rounded.Info, null)
-                    }
-                },
-                content = {
-                    Column {
-                        HeadlineText(text = "Available Workflow")
-                        SupportingText(text = 3.toString())
-                        Spacer(modifier = Modifier.height(10.dp))
-                        HeadlineText(text = "Available Model")
-                        SupportingText(text = 3.toString())
-                    }
+        item  {
+            when {
+                state.selectedModelError != null -> {
+                    Text(text = state.selectedModelError)
                 }
+                state.selectedModelEntity == ModelEntity.Empty -> {
+                    Text(text = "No Model Selected")
+                }
+                else -> {
+                    CustomSegmentedListItem(
+                        content = {
+                            Text(
+                                style = MaterialTheme.typography.headlineSmall,
+                                text = state.selectedModelEntity.name,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        supportingContent = {
+                            Spacer(modifier = Modifier.height(15.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .size(20.dp),
+                                    imageVector = Icons.Rounded.InsertDriveFile,
+                                    contentDescription = null
+                                )
+                                Text(text = state.selectedModelEntity.fileName)
+                            }
+                            Spacer(modifier = Modifier.height(1.5.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .size(20.dp),
+                                    imageVector = Icons.Rounded.FileDownload,
+                                    contentDescription = null
+                                )
+                                Text(text = state.selectedModelEntity.totalBytes.toMegaByte())
+                            }
+                        },
+                        trailingContent = {
+                            Text(
+                                color = if (state.isModelEngineOnline) Color.Green else Color.Red,
+                                text = if (state.isModelEngineOnline) "Online" else "Offline"
+                            )
+                        }
+                    )
+                }
+            }
+        }
+        spacer(2.5.dp)
+        itemRow(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CustomFloatingActionButton(
+                containerColor = if (state.isModelEngineOnline) {
+                    MaterialTheme.colorScheme.errorContainer
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                contentColor = if (state.isModelEngineOnline) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onPrimary
+                },
+                onClick = { onAction(HomeAction.ToggleModelEngine) },
+                icon = if (state.isModelEngineOnline) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
+                isLoading = state.isModelEngineLoading
             )
+            CustomFloatingActionButton(
+                onClick = { onAction(HomeAction.DownloadedModelBottomSheet) },
+                icon = Icons.Rounded.Repeat
+            )
+            BadgedBox(
+                badge = {
+                    Badge { Text(text = "3") }
+                }
+            ) {
+                CustomFloatingActionButton(
+                    onClick = { navBackStack.add(NavigationRoute.ModelScreen) },
+                    icon = Icons.Rounded.ViewList
+                )
+            }
         }
         spacer()
+        listTitle("Conversation")
+        when {
+            state.conversationError != null -> {
+                message(
+                    message = state.conversationError,
+                    messageType = MessageType.Error
+                )
+            }
+            state.conversationEntities.isEmpty() -> {
+                message(
+                    message = "No Conversation"
+                )
+            }
+        }
         itemsIndexed(
-            items = HomeMenuItem.HomeMenuItemList
-        ) { index, homeMenuItem ->
+            items = state.conversationEntities
+        ) { index, conversationEntity ->
             CustomSegmentedListItem(
-                onClick = { navBackStack.add(homeMenuItem.route) },
+                onClick = { navBackStack.add(NavigationRoute.ConversationScreen(conversationEntity.id)) },
                 index = index,
-                count = HomeMenuItem.HomeMenuItemList.size,
-                leadingContent = { Icon(homeMenuItem.icon, null) },
-                content = { Text(text = homeMenuItem.content) }
+                count = state.conversationEntities.size,
+                content = { Text(text = conversationEntity.title) }
             )
         }
     }
@@ -140,6 +318,25 @@ private fun Content(
 @Composable
 private fun Preview() {
     Screen(
-        navBackStack = rememberNavBackStack()
+        navBackStack = rememberNavBackStack(),
+        state = HomeState(
+            selectedModelEntity = ModelEntity(
+                name = "Model Preview",
+                url = "",
+                path = "",
+                fileName = "preview.litertlm",
+                totalBytes = 132123231
+            ),
+            isModelEngineOnline = false,
+            conversationEntities = listOf(
+                ConversationEntity(
+                    title = "Conversation 1"
+                ),
+                ConversationEntity(
+                    title = "Conversation 2"
+                )
+            )
+        ),
+        onAction = {}
     )
 }

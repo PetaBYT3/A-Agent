@@ -1,6 +1,5 @@
-package com.a.agent.presentation.texttotext
+package com.a.agent.presentation.conversation
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,23 +16,11 @@ import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Send
-import androidx.compose.material.icons.rounded.Stop
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.HorizontalFloatingToolbar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,28 +29,28 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import com.a.agent.data.local.ConversationEntity
 import com.a.agent.presentation.navigation.popBackStack
-import com.a.agent.presentation.texttotext.component.ChatBubble
+import com.a.agent.presentation.conversation.component.ChatBubble
+import com.a.agent.presentation.conversation.component.ChatLoading
 import com.a.agent.presentation.util.component.CustomFadeBox
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomSurfaceIconButton
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.CustomTransparentTextField
+import com.a.agent.presentation.util.component.MessageType
 import com.a.agent.presentation.util.component.loadingIndicator
 import com.a.agent.presentation.util.component.message
-import io.ktor.http.parametersOf
-import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun TextToTextScreen(
     navBackStack: NavBackStack<NavKey>,
-    modelId: String,
-    viewModel: TextToTextViewModel = koinViewModel {
-        parametersOf(modelId)
+    conversationId: String,
+    viewModel: ConversationViewModel = koinViewModel {
+        parametersOf(conversationId)
     }
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -80,17 +66,17 @@ fun TextToTextScreen(
 @Composable
 private fun Screen(
     navBackStack: NavBackStack<NavKey>,
-    state: TextToTextState,
-    onAction: (TextToTextAction) -> Unit
+    state: ConversationState,
+    onAction: (ConversationAction) -> Unit
 ) {
     Scaffold(
         topBar = {
             CustomTopAppBar(
                 onNavigationClick = { navBackStack.popBackStack() },
-                title = state.modelEntity?.name ?: "",
+                title = state.conversationEntity.title.ifBlank { "Initializing..." },
                 action = {
                     CustomSurfaceIconButton(
-                        onClick = { onAction(TextToTextAction.ClearChat) },
+                        onClick = { onAction(ConversationAction.ClearChat) },
                         icon = Icons.Rounded.Delete
                     )
                 }
@@ -111,7 +97,7 @@ private fun Screen(
         },
         bottomBar = {
             CustomSlideUpAnimatedVisibility(
-                visible = !state.isModelInitializing
+                visible = !state.isConversationInitializing
             ) {
                 Row(
                     modifier = Modifier
@@ -131,12 +117,12 @@ private fun Screen(
                                 .fillMaxWidth(),
                             placeholder = { Text(text = "Prompt") },
                             value = state.promptTextField,
-                            onValueChange = { onAction(TextToTextAction.PromptTextField(it)) },
+                            onValueChange = { onAction(ConversationAction.PromptTextField(it)) },
                             maxLines = 5
                         )
                     }
                     CustomFloatingActionButton(
-                        onClick = { onAction(TextToTextAction.GenerateButton) },
+                        onClick = { onAction(ConversationAction.GenerateButton) },
                         icon = Icons.Rounded.Send,
                         isLoading = state.isModelThinking
                     )
@@ -150,8 +136,8 @@ private fun Screen(
 private fun Content(
     navBackStack: NavBackStack<NavKey>,
     innerPadding: PaddingValues,
-    state: TextToTextState,
-    onAction: (TextToTextAction) -> Unit
+    state: ConversationState,
+    onAction: (ConversationAction) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -160,23 +146,23 @@ private fun Content(
         verticalArrangement = Arrangement.spacedBy(15.dp)
     ) {
         when {
-            state.isModelInitializing -> {
+            state.isConversationInitializing -> {
                 loadingIndicator()
             }
-            state.isError != null -> {
+            state.isConversationInitializeError != null -> {
                 message(
-                    message = state.isError,
-                    isError = true
+                    message = state.isConversationInitializeError,
+                    messageType = MessageType.Error
                 )
             }
-            state.chatList.isEmpty() -> {
+            state.chatEntities.isEmpty() -> {
                 message(
                     message = "No history chat"
                 )
             }
             else -> {
                 items(
-                    items = state.chatList
+                    items = state.chatEntities
                 ) { chatEntity ->
                     ChatBubble(
                         modifier = Modifier
@@ -187,22 +173,7 @@ private fun Content(
                 }
                 if (state.isModelThinking) {
                     item {
-                        var dotCount by remember {
-                            mutableIntStateOf(0)
-                        }
-                        LaunchedEffect(Unit) {
-                            while (state.isModelThinking) {
-                                delay(500.milliseconds)
-                                dotCount = (dotCount + 1) % 4
-                            }
-                        }
-                        val animateDots = ".".repeat(dotCount)
-                        ChatBubble(
-                            modifier = Modifier
-                                .animateItem(),
-                            fromUser = false,
-                            message = "Thinking$animateDots"
-                        )
+                        ChatLoading()
                     }
                 }
             }
@@ -215,7 +186,11 @@ private fun Content(
 private fun Preview() {
     Screen(
         navBackStack = rememberNavBackStack(),
-        state = TextToTextState(),
+        state = ConversationState(
+            conversationEntity = ConversationEntity(
+                title = "Conversation Title"
+            )
+        ),
         onAction = {}
     )
 }

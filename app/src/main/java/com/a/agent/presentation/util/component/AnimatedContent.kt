@@ -14,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 enum class AnimatedContentState {
-    IsLoading, IsError, Success
+    IsLoading, IsError, IsEmpty, Success
 }
 
 @Composable
@@ -22,12 +22,14 @@ fun CustomAnimatedContent(
     modifier: Modifier = Modifier,
     isLoading: Boolean,
     isError: Boolean,
+    isEmpty: Boolean,
     content: @Composable ((AnimatedContentState) -> Unit)
 ) {
     AnimatedContent(
         modifier = modifier,
         targetState = when {
             isLoading -> AnimatedContentState.IsLoading
+            isEmpty -> AnimatedContentState.IsEmpty
             isError -> AnimatedContentState.IsError
             else -> AnimatedContentState.Success
         },

@@ -42,7 +42,9 @@ fun CustomTransparentTextField(
     isError: Boolean = false,
     trailingIcon: @Composable (() -> Unit)? = null,
     supportingText: @Composable (() -> Unit)? = null,
-    maxLines: Int = 1,
+    enabled: Boolean = true,
+    singleLine: Boolean = false,
+    maxLines: Int =  if (singleLine) 1 else Int.MAX_VALUE,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     MaterialExpressiveTheme(
@@ -59,7 +61,9 @@ fun CustomTransparentTextField(
             isError = isError,
             trailingIcon = trailingIcon,
             supportingText = supportingText,
+            singleLine = singleLine,
             maxLines = maxLines,
+            enabled = enabled,
             keyboardOptions = keyboardOptions
         )
     }

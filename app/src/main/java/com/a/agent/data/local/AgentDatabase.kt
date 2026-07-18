@@ -7,12 +7,14 @@ import androidx.room.TypeConverters
 @Database(
     entities = [
         ModelEntity::class,
+        ConversationEntity::class,
         ChatEntity::class
     ],
-    version = 3
+    version = 5
 )
 @TypeConverters(Converter::class)
-abstract class AgentDatabase(): RoomDatabase() {
+abstract class AgentDatabase: RoomDatabase() {
     abstract val modelDao: ModelDao
+    abstract val conversationDao: ConversationDao
     abstract val chatDao: ChatDao
 }

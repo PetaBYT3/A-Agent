@@ -4,7 +4,11 @@ import com.a.agent.data.local.ModelEntity
 import com.a.agent.data.remote.DownloadInfo
 
 data class ModelState(
-    val modelEntities: List<ModelEntity> = emptyList(),
-    val downloadState: Map<String, DownloadInfo> = emptyMap(),
-    val isDownloadInitialing: Boolean = false
+    val downloadedModelEntities: List<ModelEntity> = emptyList(),
+    val downloadedModelError: String? = null,
+
+    val requireDownloadModelEntities: List<ModelEntity> = emptyList(),
+    val requireDownloadModelError: String? = null,
+
+    val downloadState: Map<String, DownloadInfo> = emptyMap()
 )

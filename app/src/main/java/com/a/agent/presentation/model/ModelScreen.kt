@@ -22,8 +22,10 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Textsms
 import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
@@ -48,11 +50,16 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import com.a.agent.data.local.ModelEntity
 import com.a.agent.data.local.ModelType
 import com.a.agent.data.remote.DownloadInfo
+import com.a.agent.presentation.model.component.CustomLinearProgressIndicator
 import com.a.agent.presentation.navigation.NavigationRoute
 import com.a.agent.presentation.navigation.popBackStack
+import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
 import com.a.agent.presentation.util.component.CustomTopAppBar
+import com.a.agent.presentation.util.component.MessageType
 import com.a.agent.presentation.util.component.SupportingText
+import com.a.agent.presentation.util.component.listTitle
+import com.a.agent.presentation.util.component.message
 import com.a.agent.presentation.util.component.spacer
 import com.a.agent.presentation.util.toMegaByte
 import org.koin.compose.viewmodel.koinViewModel
@@ -95,9 +102,9 @@ private fun Screen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            CustomFloatingActionButton(
                 onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen()) },
-                content = { Icon(Icons.Rounded.Add, null) }
+                icon = Icons.Rounded.Add
             )
         }
     )
@@ -116,64 +123,95 @@ private fun Content(
         contentPadding = innerPadding + PaddingValues(start = 15.dp, end = 15.dp, bottom = 15.dp),
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
-        itemsIndexed(
-            items = state.modelEntities
-        ) { index, modelEntity ->
-            val downloadState = state.downloadState[modelEntity.id]
-            CustomSegmentedListItem(
-                onClick = { navBackStack.add(NavigationRoute.TextToTextScreen(modelEntity.id)) },
-                index = index,
-                count = state.modelEntities.size,
-                leadingContent = {
-                    Icon(
-                        imageVector = when (modelEntity.type) {
-                            ModelType.TextToText -> Icons.Rounded.Textsms
-                            ModelType.ImageToText -> Icons.Rounded.Image
-                        },
-                        contentDescription = null
-                    )
-                },
-                content = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = modelEntity.name)
-                    }
-                },
-                additionalContent = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.End),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AnimatedVisibility(
-                            modifier = Modifier
-                                .weight(1f),
-                            visible = downloadState != null
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
+        listTitle("Downloaded Model")
+        when {
+            state.downloadedModelError != null -> {
+                message(
+                    message = state.downloadedModelError,
+                    messageType = MessageType.Error
+                )
+            }
+            state.downloadedModelEntities.isEmpty() -> {
+                message(
+                    message = "No Model Downloaded"
+                )
+            }
+            else -> {
+                itemsIndexed(
+                    items = state.downloadedModelEntities
+                ) { index, modelEntity ->
+                    val downloadState = state.downloadState[modelEntity.id]
+                    CustomSegmentedListItem(
+                        onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id)) },
+                        index = index,
+                        count = state.downloadedModelEntities.size,
+                        content = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row {
-                                    Text(text = "${downloadState?.downloadedBytes?.toMegaByte() ?: 0}/${downloadState?.totalBytes?.toMegaByte() ?: 0}")
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    Text(text = "${downloadState?.percentage ?: 0}%")
-                                }
-                                val progress by animateFloatAsState(
-                                    targetValue = downloadState?.progress ?: 0f
-                                )
-                                LinearWavyProgressIndicator(
-                                    progress = { progress }
-                                )
+                                Text(text = modelEntity.name)
                             }
-                        }
-                        Row {
+                        },
+                        trailingContent = {
                             FilledTonalIconButton(
-                                onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id)) },
-                                content = { Icon(Icons.Rounded.Info, null) }
+                                colors = if (downloadState != null) {
+                                    IconButtonDefaults.iconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                } else {
+                                    IconButtonDefaults.filledTonalIconButtonColors()
+                                },
+                                onClick = { onAction(ModelAction.ToggleDownload(modelEntity)) },
+                                content = {
+                                    Icon(
+                                        imageVector = if (downloadState != null) Icons.Rounded.Close else Icons.Rounded.RestartAlt,
+                                        contentDescription = null
+                                    )
+                                }
                             )
+                        },
+                        supportingContent = { Text(text = modelEntity.fileName) },
+                        additionalContent = {
+                            CustomLinearProgressIndicator(
+                                downloadInfo = downloadState
+                            )
+                        }
+                    )
+                }
+            }
+        }
+        spacer()
+        listTitle("Require Download Model")
+        when {
+            state.requireDownloadModelError != null -> {
+                message(
+                    message = state.requireDownloadModelError,
+                    messageType = MessageType.Error
+                )
+            }
+            state.requireDownloadModelEntities.isEmpty() -> {
+                message(
+                    message = "No Require Download Model"
+                )
+            }
+            else -> {
+                itemsIndexed(
+                    items = state.requireDownloadModelEntities
+                ) { index, modelEntity ->
+                    val downloadState = state.downloadState[modelEntity.id]
+                    CustomSegmentedListItem(
+                        onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id)) },
+                        index = index,
+                        count = state.requireDownloadModelEntities.size,
+                        content = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = modelEntity.name)
+                            }
+                        },
+                        trailingContent = {
                             FilledTonalIconButton(
                                 colors = if (downloadState != null) {
                                     IconButtonDefaults.iconButtonColors(
@@ -191,10 +229,16 @@ private fun Content(
                                     )
                                 }
                             )
+                        },
+                        supportingContent = { Text(text = modelEntity.fileName) },
+                        additionalContent = {
+                            CustomLinearProgressIndicator(
+                                downloadInfo = downloadState
+                            )
                         }
-                    }
+                    )
                 }
-            )
+            }
         }
     }
 }
@@ -205,16 +249,23 @@ private fun Preview() {
     Screen(
         navBackStack = rememberNavBackStack(),
         state = ModelState(
-            modelEntities = listOf(
+            downloadedModelEntities = listOf(
                 ModelEntity(
                     id = "1",
-                    type = ModelType.TextToText,
                     name = "Preview Model",
                     fileName = "preview.tflite",
                     totalBytes = 1023921,
-                    path = File(""),
-                    url = "https://",
-                    isSupported = true
+                    path = "",
+                    url = "https://"
+                )
+            ),
+            requireDownloadModelEntities = listOf(
+                ModelEntity(
+                    name = "Preview Model",
+                    url = "",
+                    path = "",
+                    fileName = "preview.litertlm",
+                    totalBytes = 2193123
                 )
             ),
             downloadState = mutableMapOf("1" to DownloadInfo(0, 0, 0f, 0))

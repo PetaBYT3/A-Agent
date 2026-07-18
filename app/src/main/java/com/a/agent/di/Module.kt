@@ -1,13 +1,17 @@
 package com.a.agent.di
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
+import com.a.agent.data.local.AgentDataStore
 import com.a.agent.data.local.AgentDatabase
+import com.a.agent.data.local.AgentDatabaseCallback
 import com.a.agent.data.remote.ModelApi
 import com.a.agent.data.remote.ModelApiImpl
-import com.a.agent.data.repository.LiteRepositoryImpl
-import com.a.agent.data.repository.ModelRepositoryImpl
-import com.a.agent.domain.repository.LiteRepository
-import com.a.agent.domain.repository.ModelRepository
+import com.a.agent.data.repository.LlmModelRepositoryImpl
+import com.a.agent.data.repository.LlmModelManagerRepositoryImpl
+import com.a.agent.domain.repository.LlmModelRepository
+import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.domain.usecase.ModelUseCases
 import com.a.agent.domain.usecase.model.DeleteModel
 import com.a.agent.domain.usecase.model.DownloadState
@@ -20,7 +24,8 @@ import com.a.agent.domain.usecase.validation.ModelInputValidation
 import com.a.agent.presentation.model.ModelViewModel
 import com.a.agent.presentation.modelmanager.ModelManagerViewModel
 import com.a.agent.presentation.navigation.NavigationDisplayEvent
-import com.a.agent.presentation.texttotext.TextToTextViewModel
+import com.a.agent.presentation.conversation.ConversationViewModel
+import com.a.agent.presentation.home.HomeViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
@@ -51,11 +56,13 @@ private val localDataSourceModule = module {
             name = "agentDatabase"
         ).fallbackToDestructiveMigration(false).build()
     }
+    singleOf(::AgentDatabaseCallback)
+    singleOf(::AgentDataStore)
 }
 
 private val repositoryModule = module {
-    singleOf(::ModelRepositoryImpl) bind ModelRepository::class
-    singleOf(::LiteRepositoryImpl) bind LiteRepository::class
+    singleOf(::LlmModelManagerRepositoryImpl) bind LlmModelManagerRepository::class
+    singleOf(::LlmModelRepositoryImpl) bind LlmModelRepository::class
 }
 
 private val useCasesDomainModule = module {
@@ -74,10 +81,11 @@ private val useCasesDomainModule = module {
 private val presentationModule = module {
     singleOf(::NavigationDisplayEvent)
 
+    viewModelOf(::HomeViewModel)
     viewModelOf(::ModelViewModel)
     viewModelOf(::ModelManagerViewModel)
 
-    viewModelOf(::TextToTextViewModel)
+    viewModelOf(::ConversationViewModel)
 }
 
 fun getModules() = listOf(

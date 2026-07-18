@@ -4,17 +4,13 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Download
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.a.agent.R
-import com.a.agent.domain.repository.ModelRepository
+import com.a.agent.domain.repository.LlmModelManagerRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,7 +18,7 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 class DownloadService: Service() {
-    private val modelRepository: ModelRepository by inject()
+    private val llmModelManagerRepository: LlmModelManagerRepository by inject()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var notificationManager: NotificationManager
 
@@ -47,7 +43,7 @@ class DownloadService: Service() {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
         )
         serviceScope.launch {
-            modelRepository.downloadState.collect { map ->
+            llmModelManagerRepository.activeDownloadInfo.collect { map ->
                 if (map.isNotEmpty()) {
                     val avgPercentage = map.values.map { it.percentage }.average().toInt()
                     val notification = buildNotification(

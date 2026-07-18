@@ -16,11 +16,21 @@ import kotlin.uuid.Uuid
 )
 data class ModelEntity(
     @PrimaryKey val id: String = Uuid.random().toString(),
-    val type: ModelType,
     val name: String,
     val url: String,
-    val path: File,
+    val path: String,
     val fileName: String,
     val totalBytes: Long,
-    val isSupported: Boolean,
-)
+    val isDefaultModel: Boolean = false
+) {
+    companion object {
+        val Empty = ModelEntity(
+            id = "",
+            name = "",
+            url = "",
+            path = "",
+            fileName = "",
+            totalBytes = 0,
+        )
+    }
+}

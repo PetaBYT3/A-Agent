@@ -1,7 +1,6 @@
 package com.a.agent.presentation.navigation
 
 import androidx.navigation3.runtime.NavKey
-import com.a.agent.data.local.ModelEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -22,5 +21,5 @@ sealed interface NavigationRoute: NavKey {
     data class ModelManagerScreen(val modelId: String = ""): NavigationRoute, NavKey
 
     @Serializable
-    data class TextToTextScreen(val modelId: String): NavigationRoute, NavKey
+    data class ConversationScreen(val conversationId: String): NavigationRoute, NavKey
 }

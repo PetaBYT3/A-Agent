@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
 )
 data class ChatEntity(
     @PrimaryKey val id: String = Uuid.random().toString(),
-    val modelId: String,
+    val conversationId: String,
     val fromUser: Boolean,
     val chat: String,
     val timeStamp: Long = Clock.System.now().toEpochMilliseconds()

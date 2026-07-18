@@ -40,10 +40,7 @@ class ModelApiImpl(
 
         if (fileName == null && totalBytes == null) throw UnavailableDataException("Invalid Url")
 
-        val supportedExtension = listOf(".bin", ".tflite", ".task")
-        val isSupported = supportedExtension.any {
-            it.equals(fileName?.substringAfterLast(".", ""), ignoreCase = true)
-        }
+        val isSupported = fileName?.endsWith(".litertlm", ignoreCase = true) ?: false
 
         return ModelMetadataDto(
             fileName = fileName!!,
