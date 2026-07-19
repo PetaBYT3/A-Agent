@@ -24,6 +24,39 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 @Composable
+fun CustomEmptyBottomSheet(
+    isBottomSheetVisible: Boolean,
+    content: LazyListScope.() -> Unit,
+    onCancel: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (isBottomSheetVisible) {
+        ModalBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = {
+                scope.launch {
+                    sheetState.hide()
+                }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        onCancel()
+                    }
+                }
+            }
+        ) {
+            LazyColumn(
+                modifier = Modifier,
+                verticalArrangement = Arrangement.spacedBy(2.5.dp),
+                contentPadding = PaddingValues(15.dp)
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
 fun CustomComposableBottomSheet(
     isBottomSheetVisible: Boolean,
     content: LazyListScope.() -> Unit,

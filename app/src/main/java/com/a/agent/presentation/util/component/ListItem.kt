@@ -8,10 +8,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -89,19 +91,31 @@ fun CustomSegmentedListItem(
 }
 
 
-fun LazyListScope.listTitle(title: String) {
+fun LazyListScope.listTitle(
+    title: String,
+    content: @Composable (() -> Unit)? = null
+) {
     item {
-        Box(
+        Row(
             modifier = Modifier
-                .clip(AbsoluteRoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.surfaceContainer),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .height(35.dp)
         ) {
-            HeadlineText(
+            Box(
                 modifier = Modifier
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                text = title
-            )
+                    .clip(AbsoluteRoundedCornerShape(50))
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                HeadlineText(
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    text = title
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (content != null) content()
         }
         Spacer(modifier = Modifier.height(5.dp))
     }

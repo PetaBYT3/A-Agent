@@ -1,14 +1,13 @@
 package com.a.agent.domain.repository
 
 import arrow.core.Either
-import com.a.agent.data.local.ChatEntity
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.domain.model.GenerateState
 import com.a.agent.domain.model.InitializeConversationResult
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
-interface LlmModelRepository {
+interface LlmModelEngineRepository {
     val isLlmModelEngineOnline: Flow<Boolean>
 
     suspend fun initializeEngine(modelPath: File): Flow<Either<String, Unit>>

@@ -5,7 +5,7 @@ package com.a.agent.presentation.conversation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.a.agent.domain.model.GenerateState
-import com.a.agent.domain.repository.LlmModelRepository
+import com.a.agent.domain.repository.LlmModelEngineRepository
 import com.a.agent.presentation.navigation.Event
 import com.a.agent.presentation.navigation.NavigationDisplayEvent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 class ConversationViewModel(
     val conversationId: String,
-    private val llmModelRepository: LlmModelRepository,
+    private val llmModelEngineRepository: LlmModelEngineRepository,
     private val navigationDisplayEvent: NavigationDisplayEvent
 ): ViewModel() {
     private val _state = MutableStateFlow(ConversationState())
@@ -28,7 +28,7 @@ class ConversationViewModel(
 
     private fun initialize() {
         viewModelScope.launch {
-            llmModelRepository.initializeConversation(conversationId).collect { either ->
+            llmModelEngineRepository.initializeConversation(conversationId).collect { either ->
                 either.onRight { initializeConversationResult ->
                     _state.update {
                         it.copy(
@@ -59,7 +59,7 @@ class ConversationViewModel(
     }
 
     private fun generateButton() = viewModelScope.launch {
-        llmModelRepository.generateResponse(
+        llmModelEngineRepository.generateResponse(
             conversationId = conversationId,
             prompt = _state.value.promptTextField
         ).onStart {

@@ -13,6 +13,7 @@ import com.a.agent.data.local.ModelEntity
 import com.a.agent.data.remote.DownloadInfo
 import com.a.agent.data.remote.ModelApi
 import com.a.agent.data.remote.ModelMetadataDto
+import com.a.agent.domain.model.LlmModelEngineConfiguration
 import com.a.agent.domain.model.LlmModelFilter
 import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.service.DownloadService
@@ -21,15 +22,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -43,11 +45,41 @@ class LlmModelManagerRepositoryImpl(
 ): LlmModelManagerRepository {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    override suspend fun getLlmModelEngineConfiguration(): Flow<Either<String, Pair<LlmModelEngineConfiguration, ModelEntity>>> = channelFlow {
+        try {
+            agentDataStore.llmModelEngineConfiguration.collectLatest { llmModelEngineConfiguration ->
+                if (llmModelEngineConfiguration.selectedModelId.isBlank()) {
+                    send(Either.Left("No Model Selected"))
+                    return@collectLatest
+                }
+
+                agentDatabase.modelDao.getModel(llmModelEngineConfiguration.selectedModelId).collect { modelEntity ->
+                    if (modelEntity == null) {
+                        send(Either.Left("Model Not Available"))
+                        return@collect
+                    }
+                    send(Either.Right(Pair(llmModelEngineConfiguration, modelEntity)))
+                }
+            }
+        } catch (e: Exception) {
+            send(Either.Left(e.message ?: "Unknown Error"))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    override suspend fun upsertLlmModelEngineConfiguration(llmModelEngineConfiguration: LlmModelEngineConfiguration): Flow<Either<String, String>> = flow {
+        try {
+            agentDataStore.setLlmModelEngineConfiguration(llmModelEngineConfiguration)
+            emit(Either.Right("Model Engine Configuration Updated"))
+        } catch (e: Exception) {
+            emit(Either.Left(e.message ?: "Unknown Error"))
+        }
+    }.flowOn(Dispatchers.IO)
+
     override suspend fun getSelectedModel(): Flow<Either<String, ModelEntity>> = flow {
         try {
-            agentDataStore.selectedModelId.flatMapLatest { modelId ->
-                if (modelId != null) {
-                    agentDatabase.modelDao.getModel(modelId)
+            agentDataStore.llmModelEngineConfiguration.flatMapLatest { llmModelEngineConfiguration ->
+                if (llmModelEngineConfiguration.selectedModelId.isNotBlank()) {
+                    agentDatabase.modelDao.getModel(llmModelEngineConfiguration.selectedModelId)
                 } else {
                     throw Exception("No Model Selected")
                 }
@@ -58,15 +90,6 @@ class LlmModelManagerRepositoryImpl(
                     emit(Either.Right(ModelEntity.Empty))
                 }
             }
-        } catch (e: Exception) {
-            emit(Either.Left(e.message ?: "Unknown Error"))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    override suspend fun setSelectedModel(modelId: String): Flow<Either<String, Unit>> = flow {
-        try {
-            agentDataStore.setSelectedModelId(modelId)
-            emit(Either.Right(Unit))
         } catch (e: Exception) {
             emit(Either.Left(e.message ?: "Unknown Error"))
         }

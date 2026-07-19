@@ -2,10 +2,13 @@ package com.a.agent.presentation.home
 
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.data.local.ModelEntity
+import com.a.agent.domain.model.LlmModelEngineConfiguration
 
 data class HomeState(
+    val llmModelEngineConfiguration: LlmModelEngineConfiguration? = null,
     val selectedModelEntity: ModelEntity = ModelEntity.Empty,
-    val selectedModelError: String? = null,
+
+    val initializeError: String? = null,
 
     val downloadedModelBottomSheet: Boolean = false,
     val downloadedModelEntities: List<ModelEntity> = emptyList(),

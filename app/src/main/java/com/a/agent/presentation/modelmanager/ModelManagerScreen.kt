@@ -49,6 +49,7 @@ import com.a.agent.presentation.util.component.AnimatedContentState
 import com.a.agent.presentation.util.component.CustomAnimatedContent
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
+import com.a.agent.presentation.util.component.CustomSlideLeftAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
@@ -106,7 +107,8 @@ private fun Screen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 15.dp, end = 15.dp, bottom = 25.dp),
+                    .padding(start = 15.dp, end = 15.dp, bottom = 25.dp)
+                    .animateContentSize(),
                 horizontalArrangement = Arrangement.spacedBy(15.dp)
             ) {
                 Box(
@@ -126,7 +128,7 @@ private fun Screen(
                         enabled = !state.isOnEdit
                     )
                 }
-                CustomSlideUpAnimatedVisibility(
+                CustomSlideLeftAnimatedVisibility(
                     visible = state.isOnEdit
                 ) {
                     CustomFloatingActionButton(
@@ -143,7 +145,7 @@ private fun Screen(
                     state.totalBytes != 0L,
                     state.isSupported
                 ).all { it }
-                CustomSlideUpAnimatedVisibility(
+                CustomSlideLeftAnimatedVisibility(
                     visible = isReadyToSave
                 ) {
                     CustomFloatingActionButton(

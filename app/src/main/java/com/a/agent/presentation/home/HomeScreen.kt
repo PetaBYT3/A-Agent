@@ -1,10 +1,8 @@
 package com.a.agent.presentation.home
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,42 +10,28 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ChangeCircle
-import androidx.compose.material.icons.rounded.Circle
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FileDownload
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.InsertDriveFile
-import androidx.compose.material.icons.rounded.List
-import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.ViewList
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedFilterChip
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -67,27 +51,25 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.data.local.ModelEntity
-import com.a.agent.presentation.home.component.HomeMenuItem
+import com.a.agent.domain.model.LlmModelEngineBackend
+import com.a.agent.domain.model.LlmModelEngineConfiguration
 import com.a.agent.presentation.navigation.NavigationRoute
-import com.a.agent.presentation.util.component.AnimatedContentState
-import com.a.agent.presentation.util.component.CustomAnimatedContent
 import com.a.agent.presentation.util.component.CustomComposableBottomSheet
+import com.a.agent.presentation.util.component.CustomEmptyBottomSheet
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
-import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomSurfaceIconButton
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
-import com.a.agent.presentation.util.component.HeadlineText
 import com.a.agent.presentation.util.component.MessageType
 import com.a.agent.presentation.util.component.SupportingText
 import com.a.agent.presentation.util.component.itemColumn
 import com.a.agent.presentation.util.component.itemRow
 import com.a.agent.presentation.util.component.listTitle
+import com.a.agent.presentation.util.component.loadingIndicator
 import com.a.agent.presentation.util.component.message
 import com.a.agent.presentation.util.component.spacer
 import com.a.agent.presentation.util.toMegaByte
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -135,29 +117,55 @@ private fun Screen(
             )
         },
         floatingActionButton = {
-            CustomFloatingActionButton(
-                onClick = { onAction(HomeAction.UpsertConversationBottomSheet) },
-                icon = Icons.Rounded.Add
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(15.dp)
+            ) {
+                CustomFloatingActionButton(
+                    containerColor = if (state.isModelEngineOnline) {
+                        MaterialTheme.colorScheme.errorContainer
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    contentColor = if (state.isModelEngineOnline) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onPrimary
+                    },
+                    onClick = { onAction(HomeAction.ToggleModelEngine) },
+                    icon = if (state.isModelEngineOnline) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
+                    isLoading = state.isModelEngineLoading
+                )
+                CustomFloatingActionButton(
+                    onClick = { onAction(HomeAction.UpsertConversationBottomSheet) },
+                    icon = Icons.Rounded.Add
+                )
+            }
         }
     )
 
-    CustomComposableBottomSheet(
+    CustomEmptyBottomSheet(
         isBottomSheetVisible = state.downloadedModelBottomSheet,
         content = {
             itemsIndexed(
                 items = state.downloadedModelEntities
             ) { index, modelEntity ->
                 CustomSegmentedListItem(
-                    onClick = { onAction(HomeAction.SelectModel(modelEntity)) },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
                     index = index,
                     count = state.downloadedModelEntities.size,
-                    content = { Text(text = modelEntity.name) }
+                    onClick = { onAction(HomeAction.SelectModel(modelEntity)) },
+                    content = { Text(text = modelEntity.name) },
+                    supportingContent = { Text(text = modelEntity.fileName) },
+                    trailingContent = {
+                        if (state.selectedModelEntity.id == modelEntity.id) {
+                            Icon(Icons.Rounded.Check, null)
+                        }
+                    }
                 )
             }
         },
-        confirmText = "Add Model",
-        onConfirm = {},
         onCancel = { onAction(HomeAction.DownloadedModelBottomSheet) }
     )
 
@@ -193,96 +201,129 @@ private fun Content(
         contentPadding = innerPadding + PaddingValues(start = 15.dp, end = 15.dp, bottom = 15.dp),
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
-        item  {
-            when {
-                state.selectedModelError != null -> {
-                    Text(text = state.selectedModelError)
-                }
-                state.selectedModelEntity == ModelEntity.Empty -> {
-                    Text(text = "No Model Selected")
-                }
-                else -> {
-                    CustomSegmentedListItem(
-                        content = {
-                            Text(
-                                style = MaterialTheme.typography.headlineSmall,
-                                text = state.selectedModelEntity.name,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        supportingContent = {
-                            Spacer(modifier = Modifier.height(15.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    modifier = Modifier
-                                        .size(20.dp),
-                                    imageVector = Icons.Rounded.InsertDriveFile,
-                                    contentDescription = null
-                                )
-                                Text(text = state.selectedModelEntity.fileName)
-                            }
-                            Spacer(modifier = Modifier.height(1.5.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    modifier = Modifier
-                                        .size(20.dp),
-                                    imageVector = Icons.Rounded.FileDownload,
-                                    contentDescription = null
-                                )
-                                Text(text = state.selectedModelEntity.totalBytes.toMegaByte())
-                            }
-                        },
-                        trailingContent = {
-                            Text(
-                                color = if (state.isModelEngineOnline) Color.Green else Color.Red,
-                                text = if (state.isModelEngineOnline) "Online" else "Offline"
-                            )
-                        }
-                    )
-                }
+        listTitle("Model Configuration") {
+            BadgedBox(
+                badge = { Badge { Text(text = "3") } }
+            ) {
+                CustomSurfaceIconButton(
+                    onClick = { navBackStack.add(NavigationRoute.ModelScreen) },
+                    icon = Icons.Rounded.ArrowForward
+                )
             }
         }
-        spacer(2.5.dp)
-        itemRow(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CustomFloatingActionButton(
-                containerColor = if (state.isModelEngineOnline) {
-                    MaterialTheme.colorScheme.errorContainer
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                contentColor = if (state.isModelEngineOnline) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onPrimary
-                },
-                onClick = { onAction(HomeAction.ToggleModelEngine) },
-                icon = if (state.isModelEngineOnline) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
-                isLoading = state.isModelEngineLoading
+        if (state.llmModelEngineConfiguration == null && state.selectedModelEntity == ModelEntity.Empty) {
+            loadingIndicator()
+        }
+        if (state.initializeError != null) {
+            message(
+                message = state.initializeError,
+                messageType = MessageType.Error
             )
-            CustomFloatingActionButton(
-                onClick = { onAction(HomeAction.DownloadedModelBottomSheet) },
-                icon = Icons.Rounded.Repeat
-            )
-            BadgedBox(
-                badge = {
-                    Badge { Text(text = "3") }
-                }
+        }
+        if (state.llmModelEngineConfiguration != null && state.selectedModelEntity != ModelEntity.Empty) {
+            itemColumn(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(2.5.dp)
             ) {
-                CustomFloatingActionButton(
-                    onClick = { navBackStack.add(NavigationRoute.ModelScreen) },
-                    icon = Icons.Rounded.ViewList
+                CustomSegmentedListItem(
+                    index = 0,
+                    count = 3,
+                    overline = {
+                        val contentColor = if (state.isModelEngineOnline) {
+                            Color.Green
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        }
+                        Text(
+                            color = contentColor,
+                            text = if (state.isModelEngineOnline) "Online" else "Offline"
+                        )
+                    },
+                    content = {
+                        Text(
+                            style = MaterialTheme.typography.headlineSmall,
+                            text = state.selectedModelEntity.name,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    supportingContent = {
+                        Spacer(modifier = Modifier.height(15.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .size(20.dp),
+                                imageVector = Icons.Rounded.InsertDriveFile,
+                                contentDescription = null
+                            )
+                            Text(text = state.selectedModelEntity.fileName)
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .size(20.dp),
+                                imageVector = Icons.Rounded.FileDownload,
+                                contentDescription = null
+                            )
+                            Text(text = state.selectedModelEntity.totalBytes.toMegaByte())
+                        }
+                    },
+                    trailingContent = {
+                        Column(
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            FilledTonalIconButton(
+                                onClick = { onAction(HomeAction.DownloadedModelBottomSheet) },
+                                content = { Icon(Icons.Rounded.Repeat, null) },
+                                enabled = !state.isModelEngineOnline
+                            )
+                        }
+                    }
+                )
+                CustomSegmentedListItem(
+                    index = 1,
+                    count = 3,
+                    content = { SupportingText(text = "Processing Backend") },
+                    trailingContent = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            LlmModelEngineBackend.entries.forEach { llmModelEngineBackend ->
+                                InputChip(
+                                    selected = llmModelEngineBackend == state.llmModelEngineConfiguration.processingBackend,
+                                    onClick = { onAction(HomeAction.ProcessBackendChip(llmModelEngineBackend)) },
+                                    label = { Text(text = llmModelEngineBackend.name) },
+                                    enabled = !state.isModelEngineOnline
+                                )
+                            }
+                        }
+                    }
+                )
+                CustomSegmentedListItem(
+                    index = 2,
+                    count = 3,
+                    content = { SupportingText(text = "Vision Backend") },
+                    trailingContent = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            LlmModelEngineBackend.entries.forEach { llmModelEngineBackend ->
+                                InputChip(
+                                    selected = llmModelEngineBackend == state.llmModelEngineConfiguration.visionBackend,
+                                    onClick = { onAction(HomeAction.VisionBackendChip(llmModelEngineBackend)) },
+                                    label = { Text(text = llmModelEngineBackend.name) },
+                                    enabled = !state.isModelEngineOnline
+                                )
+                            }
+                        }
+                    }
                 )
             }
         }
@@ -320,6 +361,11 @@ private fun Preview() {
     Screen(
         navBackStack = rememberNavBackStack(),
         state = HomeState(
+            llmModelEngineConfiguration = LlmModelEngineConfiguration(
+                selectedModelId = "",
+                processingBackend = LlmModelEngineBackend.GPU,
+                visionBackend = LlmModelEngineBackend.GPU
+            ),
             selectedModelEntity = ModelEntity(
                 name = "Model Preview",
                 url = "",

@@ -4,12 +4,14 @@ import arrow.core.Either
 import com.a.agent.data.local.ModelEntity
 import com.a.agent.data.remote.DownloadInfo
 import com.a.agent.data.remote.ModelMetadataDto
+import com.a.agent.domain.model.LlmModelEngineConfiguration
 import com.a.agent.domain.model.LlmModelFilter
 import kotlinx.coroutines.flow.Flow
 
 interface LlmModelManagerRepository {
+    suspend fun getLlmModelEngineConfiguration(): Flow<Either<String, Pair<LlmModelEngineConfiguration, ModelEntity>>>
+    suspend fun upsertLlmModelEngineConfiguration(llmModelEngineConfiguration: LlmModelEngineConfiguration): Flow<Either<String, String>>
     suspend fun getSelectedModel(): Flow<Either<String, ModelEntity>>
-    suspend fun setSelectedModel(modelId: String): Flow<Either<String, Unit>>
 
     suspend fun getModels(llmModelFilter: LlmModelFilter = LlmModelFilter.All): Flow<Either<String, List<ModelEntity>>>
     suspend fun getModel(modelId: String): Flow<Either<String, ModelEntity>>

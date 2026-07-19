@@ -6,10 +6,9 @@ import arrow.core.Either
 import com.a.agent.data.local.AgentDatabase
 import com.a.agent.data.local.ChatEntity
 import com.a.agent.data.local.ConversationEntity
-import com.a.agent.data.util.UnavailableDataException
 import com.a.agent.domain.model.GenerateState
 import com.a.agent.domain.model.InitializeConversationResult
-import com.a.agent.domain.repository.LlmModelRepository
+import com.a.agent.domain.repository.LlmModelEngineRepository
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
@@ -26,16 +25,14 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.io.File
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 
-class LlmModelRepositoryImpl(
+class LlmModelEngineRepositoryImpl(
     private val agentDatabase: AgentDatabase
-): LlmModelRepository {
+): LlmModelEngineRepository {
     private var engine: Engine? = null
     private var conversation: Conversation? = null
 

@@ -7,11 +7,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.Dispatchers
+import com.a.agent.domain.model.LlmModelEngineBackend
+import com.a.agent.domain.model.LlmModelEngineConfiguration
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "agentDataStore")
 
@@ -20,15 +19,27 @@ class AgentDataStore(
 ) {
     companion object {
         val SelectedModelId = stringPreferencesKey("selectedModelId")
+        val ProcessingBackend = stringPreferencesKey("processingBackend")
+        val VisionBackend = stringPreferencesKey("visionBackend")
     }
 
-    val selectedModelId: Flow<String?> = application.dataStore.data.map {
-        it[SelectedModelId]
+    val llmModelEngineConfiguration: Flow<LlmModelEngineConfiguration> = application.dataStore.data.map {
+        val selectedModelId = it[SelectedModelId]
+        val processingBackend = it[ProcessingBackend]
+        val visionBackend = it[VisionBackend]
+
+        LlmModelEngineConfiguration(
+            selectedModelId = selectedModelId ?: "",
+            processingBackend = LlmModelEngineBackend.valueOf(processingBackend ?: "GPU"),
+            visionBackend = LlmModelEngineBackend.valueOf(visionBackend ?: "GPU")
+        )
     }
 
-    suspend fun setSelectedModelId(modelId: String) {
+    suspend fun setLlmModelEngineConfiguration(llmModelEngineConfiguration: LlmModelEngineConfiguration) {
         application.dataStore.edit {
-            it[SelectedModelId] = modelId
+            it[SelectedModelId] = llmModelEngineConfiguration.selectedModelId
+            it[ProcessingBackend] = llmModelEngineConfiguration.processingBackend.name
+            it[VisionBackend] = llmModelEngineConfiguration.visionBackend.name
         }
     }
 }

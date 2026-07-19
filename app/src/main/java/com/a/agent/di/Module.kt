@@ -1,16 +1,14 @@
 package com.a.agent.di
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import com.a.agent.data.local.AgentDataStore
 import com.a.agent.data.local.AgentDatabase
 import com.a.agent.data.local.AgentDatabaseCallback
 import com.a.agent.data.remote.ModelApi
 import com.a.agent.data.remote.ModelApiImpl
-import com.a.agent.data.repository.LlmModelRepositoryImpl
+import com.a.agent.data.repository.LlmModelEngineRepositoryImpl
 import com.a.agent.data.repository.LlmModelManagerRepositoryImpl
-import com.a.agent.domain.repository.LlmModelRepository
+import com.a.agent.domain.repository.LlmModelEngineRepository
 import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.domain.usecase.ModelUseCases
 import com.a.agent.domain.usecase.model.DeleteModel
@@ -62,7 +60,7 @@ private val localDataSourceModule = module {
 
 private val repositoryModule = module {
     singleOf(::LlmModelManagerRepositoryImpl) bind LlmModelManagerRepository::class
-    singleOf(::LlmModelRepositoryImpl) bind LlmModelRepository::class
+    singleOf(::LlmModelEngineRepositoryImpl) bind LlmModelEngineRepository::class
 }
 
 private val useCasesDomainModule = module {
