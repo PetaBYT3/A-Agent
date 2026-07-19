@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import com.a.agent.domain.model.Model
 import java.io.File
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid

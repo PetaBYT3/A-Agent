@@ -3,11 +3,13 @@
 package com.a.agent.data.repository
 
 import arrow.core.Either
+import com.a.agent.data.local.AgentDataStore
 import com.a.agent.data.local.AgentDatabase
 import com.a.agent.data.local.ChatEntity
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.domain.model.GenerateState
 import com.a.agent.domain.model.InitializeConversationResult
+import com.a.agent.domain.model.LlmModelEngineBackend
 import com.a.agent.domain.repository.LlmModelEngineRepository
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Conversation
@@ -31,7 +33,8 @@ import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 
 class LlmModelEngineRepositoryImpl(
-    private val agentDatabase: AgentDatabase
+    private val agentDatabase: AgentDatabase,
+    private val agentDataStore: AgentDataStore
 ): LlmModelEngineRepository {
     private var engine: Engine? = null
     private var conversation: Conversation? = null
@@ -39,12 +42,22 @@ class LlmModelEngineRepositoryImpl(
     private val _isLlmModelEngineOnline = MutableStateFlow(false)
     override val isLlmModelEngineOnline: Flow<Boolean> = _isLlmModelEngineOnline.asStateFlow()
 
+    private fun getBackend(llmModelEngineBackend: LlmModelEngineBackend): Backend {
+        return when (llmModelEngineBackend) {
+            LlmModelEngineBackend.CPU -> Backend.CPU()
+            LlmModelEngineBackend.GPU -> Backend.GPU()
+            LlmModelEngineBackend.NPU -> Backend.NPU()
+        }
+    }
+
     override suspend fun initializeEngine(modelPath: File): Flow<Either<String, Unit>> = flow {
         try {
+            val llmModelEngineConfiguration = agentDataStore.llmModelEngineConfiguration.first()
+
             val engineConfig = EngineConfig(
                 modelPath = modelPath.absolutePath,
-                backend = Backend.GPU(),
-                visionBackend = Backend.GPU()
+                backend = getBackend(llmModelEngineConfiguration.processingBackend),
+                visionBackend = getBackend(llmModelEngineConfiguration.visionBackend)
             )
             engine = Engine(engineConfig)
             engine?.initialize()

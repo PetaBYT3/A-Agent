@@ -147,7 +147,7 @@ class HomeViewModel(
         )
         llmModelEngineRepository.upsertConversation(conversationEntity).collect { either ->
             either.onRight {
-
+                navigationDisplayEvent.sendEvent(Event.ShowSnackBar("Engine Initialized"))
             }.onLeft { error ->
                 navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
             }
