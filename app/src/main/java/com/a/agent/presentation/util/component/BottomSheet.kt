@@ -15,13 +15,67 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+
+@Composable
+fun CustomUndismissableBottomSheet(
+    isBottomSheetVisible: Boolean,
+    content: LazyListScope.() -> Unit,
+) {
+    var isVisibleInternally by remember { mutableStateOf(isBottomSheetVisible) }
+    var allowHide by remember { mutableStateOf(false) }
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = {
+            if (allowHide) true else it != SheetValue.Hidden
+        }
+    )
+
+    LaunchedEffect(isBottomSheetVisible) {
+        if (isBottomSheetVisible) {
+            allowHide = false
+            isVisibleInternally = true
+        } else {
+            if (isVisibleInternally) {
+                allowHide = true
+                sheetState.hide()
+                isVisibleInternally = false
+            }
+        }
+    }
+
+    if (isVisibleInternally) {
+        ModalBottomSheet(
+            sheetState = sheetState,
+            properties = ModalBottomSheetDefaults.properties(
+                shouldDismissOnBackPress = false
+            ),
+            onDismissRequest = {}
+        ) {
+            LazyColumn(
+                modifier = Modifier,
+                verticalArrangement = Arrangement.spacedBy(2.5.dp),
+                contentPadding = PaddingValues(15.dp)
+            ) {
+                content()
+            }
+        }
+    }
+}
 
 @Composable
 fun CustomEmptyBottomSheet(

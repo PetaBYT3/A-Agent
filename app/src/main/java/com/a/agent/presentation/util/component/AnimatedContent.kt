@@ -1,6 +1,7 @@
 package com.a.agent.presentation.util.component
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -26,7 +27,8 @@ fun CustomAnimatedContent(
     content: @Composable ((AnimatedContentState) -> Unit)
 ) {
     AnimatedContent(
-        modifier = modifier,
+        modifier = modifier
+            .animateContentSize(),
         targetState = when {
             isLoading -> AnimatedContentState.IsLoading
             isEmpty -> AnimatedContentState.IsEmpty

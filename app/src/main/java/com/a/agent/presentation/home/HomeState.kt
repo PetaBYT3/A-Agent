@@ -5,10 +5,13 @@ import com.a.agent.data.local.ModelEntity
 import com.a.agent.domain.model.LlmModelEngineConfiguration
 
 data class HomeState(
-    val llmModelEngineConfiguration: LlmModelEngineConfiguration? = null,
-    val selectedModelEntity: ModelEntity = ModelEntity.Empty,
+    val totalDownloadingProgress: Int = 0,
 
-    val initializeError: String? = null,
+    val isLlmModelEngineConfigurationLoading: Boolean = true,
+    val isLlmModelEngineConfigurationError: String? = null,
+    val llmModelEngineConfigurationBottomSheet: Boolean = false,
+    val llmModelEngineConfiguration: LlmModelEngineConfiguration = LlmModelEngineConfiguration.Empty,
+    val selectedModelEntity: ModelEntity = ModelEntity.Empty,
 
     val downloadedModelBottomSheet: Boolean = false,
     val downloadedModelEntities: List<ModelEntity> = emptyList(),
@@ -17,6 +20,7 @@ data class HomeState(
     val isModelEngineOnline: Boolean = false,
     val isModelEngineLoading: Boolean = false,
 
+    val isConversationsLoading: Boolean = true,
     val conversationEntities: List<ConversationEntity> = emptyList(),
     val conversationError: String? = null,
 

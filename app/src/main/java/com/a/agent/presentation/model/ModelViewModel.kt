@@ -35,6 +35,7 @@ class ModelViewModel(
 
         viewModelScope.launch {
             llmModelManagerRepository.getModels(LlmModelFilter.Downloaded).collect { either ->
+                _state.update { it.copy(isDownloadedModelLoading = false) }
                 either.onRight { modelEntities ->
                     _state.update { it.copy(downloadedModelEntities = modelEntities) }
                 }.onLeft { error ->
@@ -45,6 +46,7 @@ class ModelViewModel(
 
         viewModelScope.launch {
             llmModelManagerRepository.getModels(LlmModelFilter.RequestDownload).collect { either ->
+                _state.update { it.copy(isRequireDownloadModelLoading = false) }
                 either.onRight { modelEntities ->
                     _state.update { it.copy(requireDownloadModelEntities = modelEntities) }
                 }.onLeft { error ->

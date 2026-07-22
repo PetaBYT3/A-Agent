@@ -46,7 +46,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
+    //androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
@@ -76,6 +76,16 @@ dependencies {
     implementation(libs.arrow.fx.coroutine)
     implementation(libs.arrow.optics)
     ksp(libs.arrow.optics.ksp.plugin)
+
+    //FileKit
+    implementation(libs.filekit.dialog)
+    implementation(libs.filekit.dialog.compose)
+
+    //Coil
+    implementation(libs.coil.compose)
+
+    //Zoomable Image Coil
+    implementation(libs.zoomable.image.coil)
 
     //Splash Screen
     implementation(libs.androidx.core.splashscreen)

@@ -93,6 +93,7 @@ fun CustomSegmentedListItem(
 
 fun LazyListScope.listTitle(
     title: String,
+    onSurface: Boolean = true,
     content: @Composable (() -> Unit)? = null
 ) {
     item {
@@ -105,7 +106,7 @@ fun LazyListScope.listTitle(
                 modifier = Modifier
                     .clip(AbsoluteRoundedCornerShape(50))
                     .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.surfaceContainer),
+                    .background(if (onSurface) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center
             ) {
                 HeadlineText(
@@ -173,6 +174,45 @@ fun LazyListScope.message(message: String, messageType: MessageType = MessageTyp
             supportingContent = { Text(text = message) }
         )
     }
+}
+
+@Composable
+fun Message(
+    index: Int = 0,
+    count: Int = 1,
+    message: String,
+    messageType: MessageType = MessageType.Info
+) {
+    CustomSegmentedListItem(
+        index = index,
+        count = count,
+        modifier = Modifier,
+        leadingContent = {
+            Icon(
+                tint = when (messageType) {
+                    MessageType.Info -> LocalContentColor.current
+                    MessageType.Warning -> Color.Yellow
+                    MessageType.Error -> MaterialTheme.colorScheme.error
+                },
+                imageVector = when (messageType) {
+                    MessageType.Info -> Icons.Rounded.Info
+                    MessageType.Warning -> Icons.Rounded.Warning
+                    MessageType.Error -> Icons.Rounded.Error
+                },
+                contentDescription = null
+            )
+        },
+        content = {
+            Text(
+                text = when (messageType) {
+                    MessageType.Info -> "Info"
+                    MessageType.Warning -> "Warning"
+                    MessageType.Error -> "Error"
+                }
+            )
+        },
+        supportingContent = { Text(text = message) }
+    )
 }
 
 fun LazyListScope.itemColumn(

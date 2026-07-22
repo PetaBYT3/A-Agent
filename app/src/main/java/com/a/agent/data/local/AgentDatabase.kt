@@ -10,7 +10,7 @@ import androidx.room.TypeConverters
         ConversationEntity::class,
         ChatEntity::class
     ],
-    version = 5
+    version = 6
 )
 @TypeConverters(Converter::class)
 abstract class AgentDatabase: RoomDatabase() {

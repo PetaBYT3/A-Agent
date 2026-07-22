@@ -2,6 +2,8 @@
 
 package com.a.agent.data.repository
 
+import android.app.Application
+import androidx.room.withTransaction
 import arrow.core.Either
 import com.a.agent.data.local.AgentDataStore
 import com.a.agent.data.local.AgentDatabase
@@ -12,27 +14,37 @@ import com.a.agent.domain.model.InitializeConversationResult
 import com.a.agent.domain.model.LlmModelEngineBackend
 import com.a.agent.domain.repository.LlmModelEngineRepository
 import com.google.ai.edge.litertlm.Backend
+import com.google.ai.edge.litertlm.Content
+import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.compose.util.encodeToByteArray
+import io.github.vinceglb.filekit.dialogs.compose.util.toImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class LlmModelEngineRepositoryImpl(
+    private val application: Application,
     private val agentDatabase: AgentDatabase,
     private val agentDataStore: AgentDataStore
 ): LlmModelEngineRepository {
@@ -99,32 +111,49 @@ class LlmModelEngineRepositoryImpl(
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun initializeConversation(conversationId: String): Flow<Either<String, InitializeConversationResult>> = flow {
+    override suspend fun deleteConversation(conversationEntity: ConversationEntity): Flow<Either<String, String>> = flow {
         try {
-            val initialMessages = agentDatabase.chatDao.getChats(conversationId).first().takeLast(10).map { chatEntity ->
-                when (chatEntity.fromUser) {
-                    true -> Message.user(chatEntity.chat)
-                    false -> Message.model(chatEntity.chat)
-                }
+            val currentChats = agentDatabase.chatDao.getChats(conversationEntity.id).first()
+
+            agentDatabase.withTransaction {
+                agentDatabase.conversationDao.deleteConversation(conversationEntity.id)
+                agentDatabase.chatDao.clearChat(conversationEntity.id)
             }
-            val conversationConfig = ConversationConfig(
-                initialMessages = initialMessages
-            )
-            conversation = engine?.createConversation(conversationConfig)
+            currentChats.mapNotNull { it.imagePath }.forEach { imagePath ->
+                val imageFile = File(imagePath)
+                if (imageFile.exists()) imageFile.delete()
+            }
+
+            emit(Either.Right("All Conversation Data Successfully Deleted"))
+        } catch (e: Exception) {
+            emit(Either.Left(e.message ?: "Unknown Error"))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    override suspend fun initializeConversation(conversationId: String): Flow<Either<String, Pair<ConversationEntity, List<ChatEntity>>>> = flow {
+        try {
+            if (_isLlmModelEngineOnline.value) {
+                val initialMessages = agentDatabase.chatDao.getChats(conversationId).first().takeLast(10).map { chatEntity ->
+                    when (chatEntity.fromUser) {
+                        true -> Message.user(chatEntity.chat)
+                        false -> Message.model(chatEntity.chat)
+                    }
+                }
+                val conversationConfig = ConversationConfig(
+                    initialMessages = initialMessages
+                )
+                conversation = engine?.createConversation(conversationConfig)
+            }
 
             val conversationFlow = agentDatabase.conversationDao.getConversation(conversationId)
             val chatFlow = agentDatabase.chatDao.getChats(conversationId)
 
             val combinedFlow = conversationFlow.combine(chatFlow) { conversationEntity, chatEntities ->
-                if (conversationEntity != null) {
-                    val initializeConversationResult = InitializeConversationResult(
-                        conversation = conversationEntity,
-                        chatList = chatEntities
-                    )
-                    Either.Right(initializeConversationResult)
-                } else {
-                    Either.Left("Conversation Unavailable")
-                }
+                val pair = Pair(
+                    first = conversationEntity ?: ConversationEntity.Empty,
+                    second = chatEntities
+                )
+                Either.Right(pair)
             }
             emitAll(combinedFlow)
         } catch (e: Exception) {
@@ -142,20 +171,44 @@ class LlmModelEngineRepositoryImpl(
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun generateResponse(conversationId: String, prompt: String): Flow<Either<String, GenerateState>> = flow {
+    override suspend fun generateResponse(conversationId: String, imageInput: String?, prompt: String): Flow<Either<String, GenerateState>> = flow {
         try {
             val activeConversation = conversation ?: throw IllegalStateException("Engine not initialized")
 
+            val chatId = Uuid.random().toString()
+            val targetImagePath = File(application.getExternalFilesDir(null), "images" + File.separator + "$chatId.jpg")
+
+            if (imageInput != null) {
+                val parentDir = targetImagePath.parentFile
+                if (parentDir != null && !parentDir.exists()) {
+                    parentDir.mkdirs()
+                }
+                val imageBytes = File(imageInput).readBytes()
+                targetImagePath.writeBytes(imageBytes)
+            }
+
             val userChat = ChatEntity(
+                id = chatId,
                 conversationId = conversationId,
                 fromUser = true,
+                imagePath = if (imageInput != null) targetImagePath.absolutePath else null,
                 chat = prompt
             )
             agentDatabase.chatDao.upsertChat(userChat)
             emit(Either.Right(GenerateState.Requested))
 
             val fullResponse = StringBuilder()
-            activeConversation.sendMessageAsync(prompt).collect { message ->
+            val generatedResponseFlow = if (imageInput != null) {
+                val promptWithImage = Contents.of(
+                    Content.ImageBytes(File(imageInput).readBytes()),
+                    Content.Text(prompt),
+                )
+                activeConversation.sendMessageAsync(promptWithImage)
+            } else {
+                activeConversation.sendMessageAsync(prompt)
+            }
+
+            generatedResponseFlow.collect { message ->
                 fullResponse.append(message.toString())
                 emit(Either.Right(GenerateState.Generating))
             }
@@ -163,6 +216,7 @@ class LlmModelEngineRepositoryImpl(
             val modelChat = ChatEntity(
                 conversationId = conversationId,
                 fromUser = false,
+                imagePath = null,
                 chat = fullResponse.toString()
             )
             agentDatabase.chatDao.upsertChat(modelChat)

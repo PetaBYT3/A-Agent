@@ -1,10 +1,19 @@
 package com.a.agent.presentation.conversation.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -16,8 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.a.agent.presentation.util.component.SupportingText
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -26,6 +41,8 @@ import kotlin.time.Duration.Companion.milliseconds
 fun ChatBubble(
     modifier: Modifier = Modifier,
     fromUser: Boolean = true,
+    imagePath: String?,
+    onImageClick: (() -> Unit),
     message: String
 ) {
     val alignment = if (fromUser) {
@@ -53,19 +70,48 @@ fun ChatBubble(
         modifier = Modifier
             .fillMaxWidth()
     ) {
-        Card(
+        Column(
             modifier = Modifier
                 .align(alignment)
                 .widthIn(max = maxWidth * 0.8f),
-            shape = shape,
-            colors = colors
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = if (fromUser) Alignment.End else Alignment.Start
         ) {
-            SupportingText(
-                modifier = modifier
-                    .padding(15.dp),
-                text = message,
-                isSingleLine = false
-            )
+            if (imagePath != null) {
+                Box() {
+                    AsyncImage(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(50.dp)
+                            .clip(AbsoluteRoundedCornerShape(15.dp))
+                            .clickable(
+                                enabled = true,
+                                onClick = onImageClick
+                            ),
+                        model = imagePath,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        error = rememberVectorPainter(Icons.Rounded.Warning)
+                    )
+                }
+            }
+            Card(
+                shape = shape,
+                colors = colors
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    SelectionContainer() {
+                        SupportingText(
+                            modifier = modifier
+                                .padding(15.dp),
+                            text = message,
+                            isSingleLine = false
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -113,5 +159,9 @@ fun ChatLoading(
 @Preview
 @Composable
 private fun Preview() {
-    ChatLoading()
+    ChatBubble(
+        imagePath = "",
+        message = "Preview Message",
+        onImageClick = {}
+    )
 }

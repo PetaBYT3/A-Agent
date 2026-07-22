@@ -1,9 +1,11 @@
 package com.a.agent.domain.repository
 
 import arrow.core.Either
+import com.a.agent.data.local.ChatEntity
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.domain.model.GenerateState
 import com.a.agent.domain.model.InitializeConversationResult
+import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
@@ -15,7 +17,8 @@ interface LlmModelEngineRepository {
 
     suspend fun getConversations(): Flow<Either<String, List<ConversationEntity>>>
     suspend fun upsertConversation(conversationEntity: ConversationEntity): Flow<Either<String, Unit>>
-    suspend fun initializeConversation(conversationId: String): Flow<Either<String, InitializeConversationResult>>
+    suspend fun deleteConversation(conversationEntity: ConversationEntity): Flow<Either<String, String>>
+    suspend fun initializeConversation(conversationId: String): Flow<Either<String, Pair<ConversationEntity, List<ChatEntity>>>>
     suspend fun uninitializeConversation(): Flow<Either<String, Unit>>
-    suspend fun generateResponse(conversationId: String, prompt: String): Flow<Either<String, GenerateState>>
+    suspend fun generateResponse(conversationId: String, imageInput: String?, prompt: String): Flow<Either<String, GenerateState>>
 }

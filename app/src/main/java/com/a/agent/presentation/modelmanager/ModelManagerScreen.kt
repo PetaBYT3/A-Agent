@@ -55,6 +55,7 @@ import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.CustomTransparentTextField
 import com.a.agent.presentation.util.component.HeadlineText
+import com.a.agent.presentation.util.component.Message
 import com.a.agent.presentation.util.component.MessageType
 import com.a.agent.presentation.util.component.itemColumn
 import com.a.agent.presentation.util.component.loadingIndicator
@@ -172,63 +173,69 @@ private fun Content(
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
         val isMetadataAvailable = state.fileName.isNotBlank() && state.totalBytes != 0L
-        when {
-            state.isMetadataLoading -> {
-                loadingIndicator()
-            }
-            state.isMetadataError != null -> {
-                message(
-                    message = state.isMetadataError,
-                    messageType = MessageType.Error
-                )
-            }
-            !isMetadataAvailable -> {
-                message(
-                    message = "Metadata will appear here"
-                )
-            }
-            else -> {
-                itemColumn(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(15.dp)
-                ) {
-                    CustomTextField(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        label = { Text(text = "Model Name") },
-                        value = state.nameTextField,
-                        onValueChange = { onAction(ModelManagerAction.NameTextField(it)) }
-                    )
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(2.5.dp)
-                    ) {
-                        CustomSegmentedListItem(
-                            index = 0,
-                            count = 3,
-                            leadingContent = { Icon(Icons.Rounded.InsertDriveFile, null) },
-                            content = { Text(text = "Filename") },
-                            supportingContent = { Text(text = state.fileName) }
+        item {
+            CustomAnimatedContent(
+                isLoading = state.isMetadataLoading,
+                isError = state.isMetadataError != null,
+                isEmpty = !isMetadataAvailable
+            ) { animatedContentState ->
+                when (animatedContentState) {
+                    AnimatedContentState.IsLoading -> {
+                        ContainedLoadingIndicator()
+                    }
+                    AnimatedContentState.IsError -> {
+                        Message(
+                            message = state.isMetadataError ?: "",
+                            messageType = MessageType.Error
                         )
-                        CustomSegmentedListItem(
-                            index = 1,
-                            count = 3,
-                            leadingContent = { Icon(Icons.Rounded.Download, null) },
-                            content = { Text(text = "Size") },
-                            supportingContent = { Text(text = state.totalBytes.toMegaByte()) }
+                    }
+                    AnimatedContentState.IsEmpty -> {
+                        Message(
+                            message = "Model metadata will appear here."
                         )
-                        CustomSegmentedListItem(
-                            index = 2,
-                            count = 3,
-                            leadingContent = { Icon(Icons.Rounded.TypeSpecimen, null) },
-                            content = { Text(text = "Compatibility") },
-                            supportingContent = {
-                                Text(
-                                    color = if (state.isSupported) Color.Green else MaterialTheme.colorScheme.error,
-                                    text = if (state.isSupported) "Supported" else "Unsupported"
+                    }
+                    AnimatedContentState.Success -> {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(15.dp)
+                        ) {
+                            CustomTextField(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                label = { Text(text = "Model Name") },
+                                value = state.nameTextField,
+                                onValueChange = { onAction(ModelManagerAction.NameTextField(it)) }
+                            )
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(2.5.dp)
+                            ) {
+                                CustomSegmentedListItem(
+                                    index = 0,
+                                    count = 3,
+                                    leadingContent = { Icon(Icons.Rounded.InsertDriveFile, null) },
+                                    content = { Text(text = "Filename") },
+                                    supportingContent = { Text(text = state.fileName) }
+                                )
+                                CustomSegmentedListItem(
+                                    index = 1,
+                                    count = 3,
+                                    leadingContent = { Icon(Icons.Rounded.Download, null) },
+                                    content = { Text(text = "Size") },
+                                    supportingContent = { Text(text = state.totalBytes.toMegaByte()) }
+                                )
+                                CustomSegmentedListItem(
+                                    index = 2,
+                                    count = 3,
+                                    leadingContent = { Icon(Icons.Rounded.TypeSpecimen, null) },
+                                    content = { Text(text = "Compatibility") },
+                                    supportingContent = {
+                                        Text(
+                                            color = if (state.isSupported) Color.Green else MaterialTheme.colorScheme.error,
+                                            text = if (state.isSupported) "Supported" else "Unsupported"
+                                        )
+                                    }
                                 )
                             }
-                        )
+                        }
                     }
                 }
             }

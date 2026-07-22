@@ -15,4 +15,7 @@ interface ConversationDao {
 
     @Query("SELECT * FROM conversationEntity WHERE id = :id")
     fun getConversation(id: String): Flow<ConversationEntity?>
+
+    @Query("DELETE FROM conversationEntity WHERE id = :id")
+    fun deleteConversation(id: String)
 }

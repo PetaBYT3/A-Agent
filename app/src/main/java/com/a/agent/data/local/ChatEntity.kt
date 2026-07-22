@@ -16,6 +16,7 @@ data class ChatEntity(
     @PrimaryKey val id: String = Uuid.random().toString(),
     val conversationId: String,
     val fromUser: Boolean,
+    val imagePath: String?,
     val chat: String,
     val timeStamp: Long = Clock.System.now().toEpochMilliseconds()
 )

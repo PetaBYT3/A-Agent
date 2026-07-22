@@ -42,6 +42,7 @@ class ModelManagerViewModel(
                         _state.update {
                             it.copy(
                                 isOnEdit = true,
+                                isMetadataLoading = true,
                                 modelEntityToEdit = modelEntity,
                                 nameTextField = modelEntity.name,
                                 fileName = modelEntity.fileName,
@@ -53,6 +54,7 @@ class ModelManagerViewModel(
                     }.onLeft { error ->
                         _state.update { it.copy(isMetadataError = error) }
                     }
+                    _state.update { it.copy(isMetadataLoading = false) }
                 }
             }
         }
@@ -119,13 +121,11 @@ class ModelManagerViewModel(
     }
 
     private fun deleteModel() = viewModelScope.launch {
-        if (modelId != null) {
-            llmModelManagerRepository.deleteModel(_state.value.modelEntityToEdit).collect { either ->
-                either.onRight {
-                    navigationDisplayEvent.sendEvent(Event.PopBackStack)
-                }.onLeft { error ->
-                    navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
-                }
+        llmModelManagerRepository.deleteModel(_state.value.modelEntityToEdit).collect { either ->
+            either.onRight {
+                navigationDisplayEvent.sendEvent(Event.PopBackStack)
+            }.onLeft { error ->
+                navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
             }
         }
     }

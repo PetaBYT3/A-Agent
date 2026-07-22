@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.a.agent.domain.model.LlmModelEngineBackend
@@ -21,17 +22,20 @@ class AgentDataStore(
         val SelectedModelId = stringPreferencesKey("selectedModelId")
         val ProcessingBackend = stringPreferencesKey("processingBackend")
         val VisionBackend = stringPreferencesKey("visionBackend")
+        val MaxNumTokens = intPreferencesKey("maxNumTokens")
     }
 
     val llmModelEngineConfiguration: Flow<LlmModelEngineConfiguration> = application.dataStore.data.map {
         val selectedModelId = it[SelectedModelId]
         val processingBackend = it[ProcessingBackend]
         val visionBackend = it[VisionBackend]
+        val maxNumTokens = it[MaxNumTokens]
 
         LlmModelEngineConfiguration(
             selectedModelId = selectedModelId ?: "",
             processingBackend = LlmModelEngineBackend.valueOf(processingBackend ?: "GPU"),
-            visionBackend = LlmModelEngineBackend.valueOf(visionBackend ?: "GPU")
+            visionBackend = LlmModelEngineBackend.valueOf(visionBackend ?: "GPU"),
+            maxNumTokens = maxNumTokens ?: 128
         )
     }
 
@@ -40,6 +44,7 @@ class AgentDataStore(
             it[SelectedModelId] = llmModelEngineConfiguration.selectedModelId
             it[ProcessingBackend] = llmModelEngineConfiguration.processingBackend.name
             it[VisionBackend] = llmModelEngineConfiguration.visionBackend.name
+            it[MaxNumTokens] = llmModelEngineConfiguration.maxNumTokens
         }
     }
 }

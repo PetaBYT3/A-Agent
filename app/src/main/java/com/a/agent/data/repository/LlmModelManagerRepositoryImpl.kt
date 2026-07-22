@@ -16,6 +16,7 @@ import com.a.agent.data.remote.ModelMetadataDto
 import com.a.agent.domain.model.LlmModelEngineConfiguration
 import com.a.agent.domain.model.LlmModelFilter
 import com.a.agent.domain.repository.LlmModelManagerRepository
+import com.a.agent.presentation.util.toMegaByte
 import com.a.agent.service.DownloadService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,15 +51,10 @@ class LlmModelManagerRepositoryImpl(
             agentDataStore.llmModelEngineConfiguration.collectLatest { llmModelEngineConfiguration ->
                 if (llmModelEngineConfiguration.selectedModelId.isBlank()) {
                     send(Either.Left("No Model Selected"))
-                    return@collectLatest
                 }
 
                 agentDatabase.modelDao.getModel(llmModelEngineConfiguration.selectedModelId).collect { modelEntity ->
-                    if (modelEntity == null) {
-                        send(Either.Left("Model Not Available"))
-                        return@collect
-                    }
-                    send(Either.Right(Pair(llmModelEngineConfiguration, modelEntity)))
+                    send(Either.Right(Pair(llmModelEngineConfiguration, modelEntity ?: ModelEntity.Empty)))
                 }
             }
         } catch (e: Exception) {
@@ -104,13 +100,13 @@ class LlmModelManagerRepositoryImpl(
                     }
                     LlmModelFilter.RequestDownload -> {
                         val requestDownloadLlmModel = modelEntities.filter { modelEntity ->
-                            !File(modelEntity.path).exists()
+                            File(modelEntity.path).length().toMegaByte() != modelEntity.totalBytes.toMegaByte()
                         }
                         emit(Either.Right(requestDownloadLlmModel))
                     }
                     LlmModelFilter.Downloaded -> {
                         val downloadedLlmModel = modelEntities.filter { modelEntity ->
-                            File(modelEntity.path).exists()
+                            File(modelEntity.path).length().toMegaByte() == modelEntity.totalBytes.toMegaByte()
                         }
                         emit(Either.Right(downloadedLlmModel))
                     }
@@ -181,6 +177,7 @@ class LlmModelManagerRepositoryImpl(
                 stopService(serviceIntent)
 
                 emit(Either.Right(Unit))
+                return@flow
             }
 
             ContextCompat.startForegroundService(application, serviceIntent)

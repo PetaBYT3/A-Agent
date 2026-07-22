@@ -6,24 +6,27 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.11.0"
 activityCompose = "1.13.0"
-kotlin = "2.2.10"
+kotlin = "2.4.10"
 composeBom = "2026.06.01"
-material3Version = "1.5.0-alpha23"
+material3Version = "1.5.0-alpha24"
 
 koinVersion = "4.2.2"
 serializationVersion = "1.11.0"
 dataStoreVersion = "1.2.1"
 roomVersion = "2.8.4"
 arrowBomVersion = "2.2.3"
+fileKitVersion = "0.14.2"
+coilVersion = "2.7.0"
+zoomableImageCoilVersion = "0.19.0"
 splashVersion = "1.2.0"
 navigationVersion = "1.1.4"
 materialIconExtendedVersion = "1.7.8"
 reorderableVersion = "3.1.0"
-firebaseBomVersion = "34.15.0"
+firebaseBomVersion = "34.16.0"
 ktorVersion = "3.5.1"
 cameraxVersion = "1.6.1"
 tasksGenAiVersion = "0.10.35"
-litertVersion = "0.13.1"
+litertVersion = "0.14.0"
 
 kspVersion = "2.3.6"
 googleServicesVersion = "4.5.0"
@@ -67,6 +70,16 @@ arrow-core = { module = "io.arrow-kt:arrow-core" }
 arrow-fx-coroutine = { module = "io.arrow-kt:arrow-fx-coroutines" }
 arrow-optics = { module = "io.arrow-kt:arrow-optics" }
 arrow-optics-ksp-plugin = { module = "io.arrow-kt:arrow-optics-ksp-plugin", version.ref = "arrowBomVersion" }
+
+#File Kit
+filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "fileKitVersion" }
+filekit-dialog-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "fileKitVersion" }
+
+#Coil
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilVersion" }
+
+#Zoomable Image Coil
+zoomable-image-coil = { module = "me.saket.telephoto:zoomable-image-coil", version.ref = "zoomableImageCoilVersion" }
 
 #Splash Screen
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "splashVersion" }

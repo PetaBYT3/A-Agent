@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.a.agent.data.remote.DownloadInfo
+import com.a.agent.presentation.util.component.CustomSlideDownAnimatedVisibility
 import com.a.agent.presentation.util.toMegaByte
 
 @Composable
@@ -19,7 +20,7 @@ fun CustomLinearProgressIndicator(
     modifier: Modifier = Modifier,
     downloadInfo: DownloadInfo?
 ) {
-    AnimatedVisibility(
+    CustomSlideDownAnimatedVisibility(
         visible = downloadInfo != null
     ) {
         Column(

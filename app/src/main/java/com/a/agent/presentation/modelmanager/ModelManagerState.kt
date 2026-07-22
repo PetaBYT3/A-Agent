@@ -1,7 +1,6 @@
 package com.a.agent.presentation.modelmanager
 
 import com.a.agent.data.local.ModelEntity
-import com.a.agent.data.local.ModelType
 
 data class ModelManagerState(
     val isOnEdit: Boolean = false,

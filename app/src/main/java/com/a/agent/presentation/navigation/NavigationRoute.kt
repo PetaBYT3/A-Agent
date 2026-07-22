@@ -22,4 +22,7 @@ sealed interface NavigationRoute: NavKey {
 
     @Serializable
     data class ConversationScreen(val conversationId: String): NavigationRoute, NavKey
+
+    @Serializable
+    data class ImageViewScreen(val imagePath: String): NavigationRoute, NavKey
 }
