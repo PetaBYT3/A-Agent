@@ -5,27 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.data.local.ModelEntity
 import com.a.agent.domain.model.LlmModelEngineBackend
-import com.a.agent.domain.model.LlmModelFilter
-import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.domain.repository.LlmModelEngineRepository
+import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.presentation.navigation.Event
 import com.a.agent.presentation.navigation.NavigationDisplayEvent
-import com.a.agent.presentation.util.toMegaByte
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
-import kotlin.time.Duration.Companion.milliseconds
 
 class HomeViewModel(
     private val llmModelManagerRepository: LlmModelManagerRepository,
@@ -45,20 +36,25 @@ class HomeViewModel(
         }
 
         viewModelScope.launch {
-            llmModelManagerRepository.getLlmModelEngineConfiguration().collectLatest { either ->
+            llmModelManagerRepository.getLlmModelEngineConfiguration().onStart {
+                _state.update { it.copy(isLlmModelEngineConfigurationLoading = true) }
+            }.collectLatest { either ->
                 either.onRight { pair ->
-                    _state.update { it.copy(llmModelEngineConfiguration = pair.first, selectedModelEntity = pair.second) }
+                    _state.update { it.copy(
+                        llmModelEngineConfiguration = pair.first,
+                        selectedModelEntity = pair.second,
+                        isLlmModelEngineConfigurationLoading = false) }
                 }.onLeft { error ->
-                    _state.update { it.copy(isLlmModelEngineConfigurationError = error) }
+                    _state.update { it.copy(isLlmModelEngineConfigurationError = error, isLlmModelEngineConfigurationLoading = false) }
                 }
-                _state.update { it.copy(isLlmModelEngineConfigurationLoading = false) }
             }
         }
 
         viewModelScope.launch {
-            llmModelManagerRepository.getModels(LlmModelFilter.Downloaded).collect { either ->
+            llmModelManagerRepository.getModels().collect { either ->
                 either.onRight { modelEntities ->
-                    _state.update { it.copy(downloadedModelEntities = modelEntities) }
+                    val downloadedModels = modelEntities.filter { it.isDownloaded }
+                    _state.update { it.copy(downloadedModels = downloadedModels) }
                 }.onLeft { error ->
                     _state.update { it.copy(downloadedModelError = error) }
                 }
@@ -72,7 +68,9 @@ class HomeViewModel(
         }
 
         viewModelScope.launch {
-            llmModelEngineRepository.getConversations().collect { either ->
+            llmModelEngineRepository.getConversations().onStart {
+                _state.update { it.copy(isConversationsLoading = true) }
+            }.collect { either ->
                 either.onRight { conversationEntities ->
                     _state.update { it.copy(conversationEntities = conversationEntities, isConversationsLoading = false) }
                 }.onLeft { error ->

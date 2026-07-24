@@ -5,6 +5,12 @@ import java.io.File
 
 class Converter {
     @TypeConverter
+    fun fromModelSource(modelSource: ModelSource): String = modelSource.name
+
+    @TypeConverter
+    fun toModelSource(modelSource: String): ModelSource = ModelSource.valueOf(modelSource)
+
+    @TypeConverter
     fun fromFile(file: File): String = file.absolutePath
 
     @TypeConverter

@@ -7,7 +7,7 @@ import io.github.vinceglb.filekit.PlatformFile
 data class ConversationState(
     val isEngineOnline: Boolean = false,
 
-    val isConversationInitializing: Boolean = true,
+    val isConversationInitializing: Boolean = false,
     val isConversationInitializeError: String? = null,
 
     val conversationEntity: ConversationEntity = ConversationEntity.Empty,

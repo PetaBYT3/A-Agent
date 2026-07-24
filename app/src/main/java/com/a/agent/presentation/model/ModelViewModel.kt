@@ -1,15 +1,12 @@
 package com.a.agent.presentation.model
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.a.agent.data.local.ModelEntity
-import com.a.agent.domain.model.LlmModelFilter
+import com.a.agent.data.local.ModelSource
 import com.a.agent.domain.repository.LlmModelManagerRepository
-import com.a.agent.domain.usecase.ModelUseCases
 import com.a.agent.presentation.navigation.Event
 import com.a.agent.presentation.navigation.NavigationDisplayEvent
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.onStart
@@ -34,23 +31,49 @@ class ModelViewModel(
         }
 
         viewModelScope.launch {
-            llmModelManagerRepository.getModels(LlmModelFilter.Downloaded).collect { either ->
-                _state.update { it.copy(isDownloadedModelLoading = false) }
-                either.onRight { modelEntities ->
-                    _state.update { it.copy(downloadedModelEntities = modelEntities) }
+            llmModelManagerRepository.getModels().onStart {
+                _state.update { it.copy(isAllModelsLoading = true) }
+            }.collect { either ->
+                either.onRight { models ->
+                    _state.update { it.copy(allModels = models, isAllModelsLoading = false) }
                 }.onLeft { error ->
-                    _state.update { it.copy(downloadedModelError = error) }
+                    _state.update { it.copy(isAllModelsError = error, isAllModelsLoading = false) }
                 }
             }
         }
 
         viewModelScope.launch {
-            llmModelManagerRepository.getModels(LlmModelFilter.RequestDownload).collect { either ->
-                _state.update { it.copy(isRequireDownloadModelLoading = false) }
-                either.onRight { modelEntities ->
-                    _state.update { it.copy(requireDownloadModelEntities = modelEntities) }
+            llmModelManagerRepository.getModels(ModelSource.Default).onStart {
+                _state.update { it.copy(isDefaultModelsLoading = true) }
+            }.collect { either ->
+                either.onRight { models ->
+                    _state.update { it.copy(defaultModels = models, isDefaultModelsLoading = false) }
                 }.onLeft { error ->
-                    _state.update { it.copy(requireDownloadModelError = error) }
+                    _state.update { it.copy(isDefaultModelsError = error, isDefaultModelsLoading = false) }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            llmModelManagerRepository.getModels(ModelSource.Url).onStart {
+                _state.update { it.copy(isUrlModelsLoading = true) }
+            }.collect { either ->
+                either.onRight { models ->
+                    _state.update { it.copy(urlModels = models, isUrlModelsLoading = false) }
+                }.onLeft { error ->
+                    _state.update { it.copy(isUrlModelsError = error, isUrlModelsLoading = false) }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            llmModelManagerRepository.getModels(ModelSource.Local).onStart {
+                _state.update { it.copy(isLocalModelsLoading = true) }
+            }.collect { either ->
+                either.onRight { models ->
+                    _state.update { it.copy(localModels = models, isLocalModelsLoading = false) }
+                }.onLeft { error ->
+                    _state.update { it.copy(isLocalModelsError = error, isLocalModelsLoading = false) }
                 }
             }
         }

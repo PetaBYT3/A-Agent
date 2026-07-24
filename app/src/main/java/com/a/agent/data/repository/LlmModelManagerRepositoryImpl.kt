@@ -10,11 +10,11 @@ import arrow.core.Either
 import com.a.agent.data.local.AgentDataStore
 import com.a.agent.data.local.AgentDatabase
 import com.a.agent.data.local.ModelEntity
+import com.a.agent.data.local.ModelSource
 import com.a.agent.data.remote.DownloadInfo
 import com.a.agent.data.remote.ModelApi
 import com.a.agent.data.remote.ModelMetadataDto
 import com.a.agent.domain.model.LlmModelEngineConfiguration
-import com.a.agent.domain.model.LlmModelFilter
 import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.presentation.util.toMegaByte
 import com.a.agent.service.DownloadService
@@ -28,11 +28,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -45,6 +44,33 @@ class LlmModelManagerRepositoryImpl(
     private val agentDataStore: AgentDataStore
 ): LlmModelManagerRepository {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            checkAndUpsertInitialData()
+        }
+    }
+
+    private suspend fun checkAndUpsertInitialData() {
+        val modelEntities = agentDatabase.modelDao.getModels().first()
+        val initialData = listOf(
+            ModelEntity(
+                name = "Gemma 4 E2B",
+                url = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+                path = File(application.getExternalFilesDir(null), "model" + File.separator + "gemma-4-E2B-it.litertlm").absolutePath,
+                fileName = "gemma-4-E2B-it.litertlm",
+                totalBytes = 2588147712,
+                modelSource = ModelSource.Default,
+                isDownloaded = false
+            )
+        )
+
+        if (modelEntities.isEmpty()) {
+            initialData.forEach { modelEntity ->
+                agentDatabase.modelDao.upsertModel(modelEntity)
+            }
+        }
+    }
 
     override suspend fun getLlmModelEngineConfiguration(): Flow<Either<String, Pair<LlmModelEngineConfiguration, ModelEntity>>> = channelFlow {
         try {
@@ -91,24 +117,38 @@ class LlmModelManagerRepositoryImpl(
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun getModels(llmModelFilter: LlmModelFilter): Flow<Either<String, List<ModelEntity>>> = flow {
+    override suspend fun getModels(modelSource: ModelSource?): Flow<Either<String, List<ModelEntity>>> = flow {
         try {
             agentDatabase.modelDao.getModels().collect { modelEntities ->
-                when (llmModelFilter) {
-                    LlmModelFilter.All -> {
-                        emit(Either.Right(modelEntities))
-                    }
-                    LlmModelFilter.RequestDownload -> {
-                        val requestDownloadLlmModel = modelEntities.filter { modelEntity ->
-                            File(modelEntity.path).length().toMegaByte() != modelEntity.totalBytes.toMegaByte()
+                val validatedModelEntities = modelEntities.map { modelEntity ->
+                    val expectedSize = modelEntity.totalBytes.toMegaByte()
+                    val modelSize = File(modelEntity.path).length().toMegaByte()
+
+                    modelEntity.copy(
+                        isDownloaded = expectedSize == modelSize
+                    )
+                }
+                when (modelSource) {
+                    ModelSource.Default -> {
+                        val filteredModels = validatedModelEntities.filter { modelEntity ->
+                            modelEntity.modelSource == ModelSource.Default
                         }
-                        emit(Either.Right(requestDownloadLlmModel))
+                        emit(Either.Right(filteredModels))
                     }
-                    LlmModelFilter.Downloaded -> {
-                        val downloadedLlmModel = modelEntities.filter { modelEntity ->
-                            File(modelEntity.path).length().toMegaByte() == modelEntity.totalBytes.toMegaByte()
+                    ModelSource.Url -> {
+                        val filteredModel = validatedModelEntities.filter { modelEntity ->
+                            modelEntity.modelSource == ModelSource.Url
                         }
-                        emit(Either.Right(downloadedLlmModel))
+                        emit(Either.Right(filteredModel))
+                    }
+                    ModelSource.Local -> {
+                        val filteredModel = validatedModelEntities.filter { modelEntity ->
+                            modelEntity.modelSource == ModelSource.Local
+                        }
+                        emit(Either.Right(filteredModel))
+                    }
+                    null -> {
+                        emit(Either.Right(validatedModelEntities))
                     }
                 }
             }
@@ -186,11 +226,14 @@ class LlmModelManagerRepositoryImpl(
                     _activeDownloadInfo.update {
                         it + (modelEntity.id to DownloadInfo(modelEntity.totalBytes, 0, 0f, 0))
                     }
-
                     modelApi.getModelFile(modelEntity.url, File(modelEntity.path)).collect { downloadInfo ->
                         _activeDownloadInfo.update { it + (modelEntity.id to downloadInfo) }
                     }
                     _activeDownloadInfo.update { it - modelEntity.id }
+                    val updatedModelEntity = modelEntity.copy(
+                        isDownloaded = true
+                    )
+                    agentDatabase.modelDao.upsertModel(updatedModelEntity)
                     stopService(serviceIntent)
                 } catch (e: Exception) {
                     emit(Either.Left(e.message ?: "Unknown Error"))

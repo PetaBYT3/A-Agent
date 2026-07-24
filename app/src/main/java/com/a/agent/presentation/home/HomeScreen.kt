@@ -10,71 +10,67 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.FileDownload
-import androidx.compose.material.icons.rounded.InsertDriveFile
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Badge
-import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.data.local.ModelEntity
+import com.a.agent.data.local.ModelSource
 import com.a.agent.domain.model.LlmModelEngineBackend
 import com.a.agent.domain.model.LlmModelEngineConfiguration
 import com.a.agent.presentation.navigation.NavigationRoute
-import com.a.agent.presentation.util.component.AnimatedContentState
-import com.a.agent.presentation.util.component.CustomAnimatedContent
+import com.a.agent.presentation.util.component.BannerItem
+import com.a.agent.presentation.util.component.BannerType
 import com.a.agent.presentation.util.component.CustomComposableBottomSheet
 import com.a.agent.presentation.util.component.CustomEmptyBottomSheet
+import com.a.agent.presentation.util.component.CustomFadeAnimatedContent
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomPopupMenu
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
-import com.a.agent.presentation.util.component.CustomSurfaceIconButton
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.CustomUndismissableBottomSheet
 import com.a.agent.presentation.util.component.HeadlineText
-import com.a.agent.presentation.util.component.Message
-import com.a.agent.presentation.util.component.MessageType
+import com.a.agent.presentation.util.component.TrailingText
 import com.a.agent.presentation.util.component.itemColumn
 import com.a.agent.presentation.util.component.listTitle
-import com.a.agent.presentation.util.component.message
 import com.a.agent.presentation.util.component.spacer
-import com.a.agent.presentation.util.toMegaByte
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -101,12 +97,11 @@ private fun Screen(
     Scaffold(
         topBar = {
             CustomTopAppBar(
-                contentPadding = PaddingValues(end = 7.dp),
                 title = "Home",
                 action = {
-                    CustomSurfaceIconButton(
+                    IconButton(
                         onClick = {},
-                        icon = Icons.Rounded.Person
+                        content = { Icon(Icons.Rounded.Person, null) }
                     )
                 }
             )
@@ -150,14 +145,14 @@ private fun Screen(
         content = {
             listTitle("Change Model", false)
             itemsIndexed(
-                items = state.downloadedModelEntities
+                items = state.downloadedModels
             ) { index, modelEntity ->
                 CustomSegmentedListItem(
                     colors = ListItemDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     ),
                     index = index,
-                    count = state.downloadedModelEntities.size,
+                    count = state.downloadedModels.size,
                     onClick = { onAction(HomeAction.SelectModel(modelEntity)) },
                     content = { Text(text = modelEntity.name) },
                     supportingContent = { Text(text = modelEntity.fileName) },
@@ -181,9 +176,6 @@ private fun Screen(
             ) {
                 val llmModelEngineConfiguration = 2
                 CustomSegmentedListItem(
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ),
                     index = 0,
                     count = llmModelEngineConfiguration,
                     content = { Text(text = "Processing Backend") },
@@ -191,7 +183,7 @@ private fun Screen(
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
-                            LlmModelEngineBackend.entries.forEach { llmModelEngineBackend ->
+                            LlmModelEngineBackend.entries.fastForEach { llmModelEngineBackend ->
                                 InputChip(
                                     selected = llmModelEngineBackend == state.llmModelEngineConfiguration.processingBackend,
                                     onClick = { onAction(HomeAction.ProcessBackendChip(llmModelEngineBackend)) },
@@ -202,9 +194,6 @@ private fun Screen(
                     }
                 )
                 CustomSegmentedListItem(
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ),
                     index = 1,
                     count = llmModelEngineConfiguration,
                     content = { Text(text = "Vision Backend") },
@@ -250,29 +239,21 @@ private fun Screen(
         isBottomSheetVisible = state.isModelEngineLoading,
         content = {
             item {
-                CustomSegmentedListItem(
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ),
-                    content = {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            HeadlineText(
-                                text = if (state.isModelEngineOnline) {
-                                    "Shutting Down The Model Engine..."
-                                } else {
-                                    "Starting Up The Model Engine..."
-                                },
-                                isSingleLine = false
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            ContainedLoadingIndicator()
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    HeadlineText(
+                        text = if (state.isModelEngineOnline) {
+                            "Shutting Down The Model Engine..."
+                        } else {
+                            "Starting Up The Model Engine..."
                         }
-                    }
-                )
+                    )
+                    LinearWavyProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+                }
             }
         }
     )
@@ -287,151 +268,115 @@ private fun Content(
 ) {
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize(),
-        contentPadding = innerPadding + PaddingValues(start = 15.dp, end = 15.dp, bottom = 15.dp),
+            .fillMaxSize()
+            .padding(innerPadding),
+        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 15.dp),
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
-        listTitle("Model Configuration")
+        listTitle(
+            title = "Selected Model",
+            content = {
+                AssistChip(
+                    onClick = { navBackStack.add(NavigationRoute.ModelScreen) },
+                    label = { Text(text = "View All") },
+                    trailingIcon = {
+                        if (state.totalDownloadingProgress != 0) {
+                            Badge { Text(text = state.totalDownloadingProgress.toString()) }
+                        }
+                    }
+                )
+            }
+        )
         item {
-            CustomAnimatedContent(
-                isLoading = state.isLlmModelEngineConfigurationLoading,
-                isError = state.isLlmModelEngineConfigurationError != null,
-                isEmpty = state.llmModelEngineConfiguration.selectedModelId.isBlank()
+            CustomFadeAnimatedContent(
+                targetState = when {
+                    state.isLlmModelEngineConfigurationLoading -> true
+                    else -> false
+                }
             ) { animatedContentState ->
                 when (animatedContentState) {
-                    AnimatedContentState.IsLoading -> {
-                        ContainedLoadingIndicator()
-                    }
-                    AnimatedContentState.IsError -> {
-                        Message(
-                            count = 2,
-                            message = state.isLlmModelEngineConfigurationError ?: "",
-                            messageType = MessageType.Error
+                    true -> {
+                        LinearWavyProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
                         )
                     }
-                    AnimatedContentState.IsEmpty -> {
-                        Message(
-                            count = 2,
-                            message = "No Model Selected",
-                            messageType = MessageType.Warning
-                        )
-                    }
-                    AnimatedContentState.Success -> {
-                        CustomSegmentedListItem(
-                            index = 0,
-                            count = 2,
-                            overline = {
-                                val contentColor = if (state.isModelEngineOnline) {
-                                    Color.Green
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                }
-                                Text(
-                                    color = contentColor,
+                    false -> {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = AbsoluteRoundedCornerShape(25.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(15.dp)
+                            ) {
+                                TrailingText(
+                                    color = if (state.isModelEngineOnline) Color.Green else MaterialTheme.colorScheme.error,
                                     text = if (state.isModelEngineOnline) "Online" else "Offline"
                                 )
-                            },
-                            content = {
-                                Text(
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    text = state.selectedModelEntity.name,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            supportingContent = {
+                                if (state.selectedModelEntity != ModelEntity.Empty) {
+                                    Text(
+                                        text = state.selectedModelEntity.name,
+                                        style = MaterialTheme.typography.displaySmall,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                } else {
+                                    Text(
+                                        color = MaterialTheme.colorScheme.error,
+                                        text = "No Model !",
+                                        style = MaterialTheme.typography.displaySmall,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(15.dp))
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .size(20.dp),
-                                        imageVector = Icons.Rounded.InsertDriveFile,
-                                        contentDescription = null
+                                    OutlinedButton(
+                                        onClick = { onAction(HomeAction.DownloadedModelBottomSheet) },
+                                        content = { Text(text = "Change") }
                                     )
-                                    Text(text = state.selectedModelEntity.fileName)
-                                }
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .size(20.dp),
-                                        imageVector = Icons.Rounded.FileDownload,
-                                        contentDescription = null
-                                    )
-                                    Text(text = state.selectedModelEntity.totalBytes.toMegaByte())
-                                }
-                            },
-                            trailingContent = {
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    FilledTonalIconButton(
+                                    OutlinedButton(
                                         onClick = { onAction(HomeAction.LlmModelEngineConfigurationBottomSheet) },
-                                        content = { Icon(Icons.Rounded.Settings, null) },
-                                        enabled = !state.isModelEngineOnline
+                                        content = { Text(text = "Configure") }
                                     )
                                 }
                             }
-                        )
+                        }
                     }
                 }
             }
         }
-        item {
-            CustomSegmentedListItem(
-                index = 1,
-                count = 2,
-                onClick = { navBackStack.add(NavigationRoute.ModelScreen) },
-                content = { Text(text = "Model List") },
-                trailingContent = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        if (state.totalDownloadingProgress != 0) {
-                            Badge { Text(text = state.totalDownloadingProgress.toString()) }
-                        }
-                        FilledTonalIconButton(
-                            onClick = { onAction(HomeAction.DownloadedModelBottomSheet) },
-                            content = { Icon(Icons.Rounded.Repeat, null) },
-                            enabled = !state.isModelEngineOnline
-                        )
-                    }
-                }
-            )
-        }
         spacer()
         listTitle("Conversation")
         item {
-            CustomAnimatedContent(
-                isLoading = state.isConversationsLoading,
-                isError = state.conversationError != null,
-                isEmpty = state.conversationEntities.isEmpty()
-            ) { animatedContentState ->
-                when (animatedContentState) {
-                    AnimatedContentState.IsLoading -> {
-                        ContainedLoadingIndicator()
-                    }
-                    AnimatedContentState.IsError -> {
-                        Message(
-                            message = state.conversationError ?: "",
-                            messageType = MessageType.Error
-                        )
-                    }
-                    AnimatedContentState.IsEmpty -> {
-                        Message(
-                            message = "No Conversation Data"
-                        )
-                    }
-                    AnimatedContentState.Success -> {
-
-                    }
+            when {
+                state.isConversationsLoading -> {
+                    LinearWavyProgressIndicator(
+                        modifier = Modifier
+                            .animateItem()
+                            .fillMaxWidth()
+                    )
+                }
+                state.conversationError != null -> {
+                    BannerItem(
+                        modifier = Modifier
+                            .animateItem(),
+                        message = state.conversationError,
+                        bannerType = BannerType.Error
+                    )
+                }
+                state.conversationEntities.isEmpty() -> {
+                    BannerItem(
+                        modifier = Modifier
+                            .animateItem(),
+                        message = "Empty Conversation",
+                        bannerType = BannerType.Info
+                    )
                 }
             }
         }
@@ -458,7 +403,7 @@ private fun Content(
                     )
                     CustomPopupMenu(
                         content = { expand ->
-                            FilledTonalIconButton(
+                            IconButton(
                                 onClick = expand,
                                 content = { Icon(Icons.Rounded.MoreVert, null) }
                             )
@@ -478,8 +423,9 @@ private fun Preview() {
         navBackStack = rememberNavBackStack(),
         state = HomeState(
             totalDownloadingProgress = 2,
+            isLlmModelEngineConfigurationLoading = false,
             llmModelEngineConfiguration = LlmModelEngineConfiguration(
-                selectedModelId = "",
+                selectedModelId = "123",
                 processingBackend = LlmModelEngineBackend.GPU,
                 visionBackend = LlmModelEngineBackend.GPU,
                 maxNumTokens = 128
@@ -489,7 +435,9 @@ private fun Preview() {
                 url = "",
                 path = "",
                 fileName = "preview.litertlm",
-                totalBytes = 132123231
+                totalBytes = 132123231,
+                modelSource = ModelSource.Default,
+                isDownloaded = true
             ),
             isModelEngineOnline = false,
             conversationEntities = listOf(

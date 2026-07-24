@@ -16,9 +16,6 @@ fun CustomSurfaceIconButton(
     icon: ImageVector
 ) {
     IconButton(
-        colors = IconButtonDefaults.iconButtonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
         onClick = onClick,
         content = { Icon(icon, null) }
     )

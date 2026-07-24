@@ -2,45 +2,34 @@
 
 package com.a.agent.presentation.util.component
 
-import android.graphics.drawable.Icon
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Dangerous
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -100,21 +89,14 @@ fun LazyListScope.listTitle(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(35.dp)
+                .height(AssistChipDefaults.Height),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            SupportingText(
                 modifier = Modifier
-                    .clip(AbsoluteRoundedCornerShape(50))
-                    .fillMaxHeight()
-                    .background(if (onSurface) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center
-            ) {
-                HeadlineText(
-                    modifier = Modifier
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                    text = title
-                )
-            }
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                text = title
+            )
             Spacer(modifier = Modifier.weight(1f))
             if (content != null) content()
         }
@@ -178,15 +160,31 @@ fun LazyListScope.message(message: String, messageType: MessageType = MessageTyp
 
 @Composable
 fun Message(
+    modifier: Modifier = Modifier,
     index: Int = 0,
     count: Int = 1,
     message: String,
     messageType: MessageType = MessageType.Info
 ) {
+    val containerColor = when (messageType) {
+        MessageType.Info -> MaterialTheme.colorScheme.surfaceContainer
+        MessageType.Warning -> Color.Yellow
+        MessageType.Error -> MaterialTheme.colorScheme.errorContainer
+    }
+    val contentColor = when (messageType) {
+        MessageType.Info -> Color.Unspecified
+        MessageType.Warning -> Color.Black
+        MessageType.Error -> MaterialTheme.colorScheme.onErrorContainer
+    }
     CustomSegmentedListItem(
+        modifier = modifier,
+        colors = ListItemDefaults.colors(
+            containerColor = containerColor,
+            leadingContentColor = contentColor,
+            contentColor = contentColor
+        ),
         index = index,
         count = count,
-        modifier = Modifier,
         leadingContent = {
             Icon(
                 tint = when (messageType) {
@@ -203,15 +201,10 @@ fun Message(
             )
         },
         content = {
-            Text(
-                text = when (messageType) {
-                    MessageType.Info -> "Info"
-                    MessageType.Warning -> "Warning"
-                    MessageType.Error -> "Error"
-                }
+            SupportingText(
+                text = message
             )
-        },
-        supportingContent = { Text(text = message) }
+        }
     )
 }
 

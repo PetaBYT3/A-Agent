@@ -42,7 +42,9 @@ class ConversationViewModel(
         }
 
         viewModelScope.launch {
-            llmModelEngineRepository.initializeConversation(conversationId).collect { either ->
+            llmModelEngineRepository.initializeConversation(conversationId).onStart {
+                _state.update { it.copy(isConversationInitializing = true) }
+            }.collect { either ->
                 either.onRight { pair ->
                     _state.update {
                         it.copy(

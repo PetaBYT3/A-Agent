@@ -1,8 +1,5 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+package com.a.agent.presentation.upsertlocalmodel
 
-package com.a.agent.presentation.modelmanager
-
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,12 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.InsertDriveFile
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.TypeSpecimen
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -37,26 +34,27 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.a.agent.data.local.ModelEntity
-import com.a.agent.data.local.ModelSource
 import com.a.agent.presentation.navigation.popBackStack
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
 import com.a.agent.presentation.util.component.CustomShrinkLeftAnimatedVisibility
-import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
+import com.a.agent.presentation.util.component.CustomUndismissableBottomSheet
 import com.a.agent.presentation.util.component.Message
 import com.a.agent.presentation.util.component.MessageType
-import com.a.agent.presentation.util.component.SupportingText
+import com.a.agent.presentation.util.component.TitleText
 import com.a.agent.presentation.util.toMegaByte
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
-fun ModelManagerScreen(
+fun UpsertLocalModelScreen(
     navBackStack: NavBackStack<NavKey>,
     modelId: String,
-    viewModel: ModelManagerViewModel = koinViewModel {
+    viewModel: UpsertLocalModelViewModel = koinViewModel {
         parametersOf(modelId)
     }
 ) {
@@ -73,8 +71,8 @@ fun ModelManagerScreen(
 @Composable
 private fun Screen(
     navBackStack: NavBackStack<NavKey>,
-    state: ModelManagerState,
-    onAction: (ModelManagerAction) -> Unit
+    state: UpsertLocalModelState,
+    onAction: (UpsertLocalModelAction) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -92,49 +90,76 @@ private fun Screen(
             )
         },
         bottomBar = {
-            CustomSlideUpAnimatedVisibility(
+            Row(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface),
-                visible = state.model.modelSource != ModelSource.Default
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 25.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
             ) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 10.dp, vertical = 25.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                CustomShrinkLeftAnimatedVisibility(
+                    visible = !state.isOnEdit
                 ) {
-                    CustomTextField(
-                        modifier = Modifier
-                            .weight(1f),
-                        placeholder = { Text(text = "Direct Link Url") },
-                        value = state.model.url,
-                        onValueChange = { onAction(ModelManagerAction.UrlTextField(it)) },
-                        singleLine = true,
-                        enabled = !state.isOnEdit
+                    val filePicker = rememberFilePickerLauncher(
+                        type = FileKitType.File(),
+                        onResult = { platformFile ->
+                            onAction(UpsertLocalModelAction.FilePickerButton(platformFile))
+                        }
                     )
-                    CustomShrinkLeftAnimatedVisibility(
-                        visible = state.isOnEdit
-                    ) {
-                        Row {
-                            Spacer(modifier = Modifier.width(10.dp))
-                            CustomFloatingActionButton(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                onClick = { onAction(ModelManagerAction.DeleteModel) },
-                                icon = Icons.Rounded.Delete
-                            )
-                        }
+                    Row {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        CustomFloatingActionButton(
+                            onClick = { filePicker.launch() },
+                            icon = Icons.Rounded.AttachFile
+                        )
                     }
-                    CustomShrinkLeftAnimatedVisibility(
-                        visible = state.model != ModelEntity.Empty || state.model.url.isNotBlank() || state.model.name.isNotBlank()
-                    ) {
-                        Row {
-                            Spacer(modifier = Modifier.width(10.dp))
-                            CustomFloatingActionButton(
-                                onClick = { onAction(ModelManagerAction.UpsertModel) },
-                                icon = Icons.Rounded.Save
-                            )
-                        }
+                }
+                CustomShrinkLeftAnimatedVisibility(
+                    visible = state.isOnEdit
+                ) {
+                    Row {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        CustomFloatingActionButton(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            onClick = { onAction(UpsertLocalModelAction.DeleteModelButton) },
+                            icon = Icons.Rounded.Delete
+                        )
                     }
+                }
+                CustomShrinkLeftAnimatedVisibility(
+                    visible = state.model.name.isNotBlank()
+                ) {
+                    Row {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        CustomFloatingActionButton(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            onClick = { onAction(UpsertLocalModelAction.UpsertModelButton) },
+                            icon = Icons.Rounded.Save
+                        )
+                    }
+                }
+            }
+        }
+    )
+
+    CustomUndismissableBottomSheet(
+        isBottomSheetVisible = state.isUpsertModelLoading,
+        content = {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    TitleText(
+                        text = "Upsert And Importing Model..."
+                    )
+                    LinearWavyProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
                 }
             }
         }
@@ -145,8 +170,8 @@ private fun Screen(
 private fun Content(
     navBackStack: NavBackStack<NavKey>,
     innerPadding: PaddingValues,
-    state: ModelManagerState,
-    onAction: (ModelManagerAction) -> Unit
+    state: UpsertLocalModelState,
+    onAction: (UpsertLocalModelAction) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -156,32 +181,26 @@ private fun Content(
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
         when {
-            state.isMetadataLoading -> {
-                item(key = "isMetadataLoading") {
+            state.isModelLoading -> {
+                item(key = "isModelLoading") {
                     LinearWavyProgressIndicator(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .animateItem()
                     )
                 }
             }
-            state.isMetadataError != null -> {
-                item(key = "isMetadataError") {
+            state.isModelError != null -> {
+                item(key = "isModelError") {
                     Message(
-                        modifier = Modifier
-                            .animateItem(),
-                        message = state.isMetadataError,
+                        message = state.isModelError,
                         messageType = MessageType.Error
                     )
                 }
             }
-            state.model.name.isBlank() && state.model.totalBytes == 0L -> {
-                item(key = "isMetadataEmpty") {
+            state.model == ModelEntity.Empty -> {
+                item(key = "isModelEmpty") {
                     Message(
-                        modifier = Modifier
-                            .animateItem(),
-                        message = "Model Metadata Will Appear Here",
-                        messageType = MessageType.Info
+                        message = "File Metadata Will Appear Here"
                     )
                 }
             }
@@ -189,16 +208,16 @@ private fun Content(
                 item(key = "modelMetadata") {
                     Column(
                         modifier = Modifier
-                            .animateItem(),
+                            .animateItem()
+                            .fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         CustomTextField(
                             modifier = Modifier
                                 .fillMaxWidth(),
-                            label = { Text(text = "Model Name") },
+                            label = { Text(text = "Name") },
                             value = state.model.name,
-                            onValueChange = { onAction(ModelManagerAction.NameTextField(it)) },
-                            enabled = state.model.modelSource != ModelSource.Default
+                            onValueChange = { onAction(UpsertLocalModelAction.NameTextField(it)) }
                         )
                         Column(
                             verticalArrangement = Arrangement.spacedBy(2.5.dp)
@@ -226,12 +245,7 @@ private fun Content(
                                     count = metadataItem.size,
                                     leadingContent = { Icon(triple.first, null) },
                                     content = { Text(text = triple.second) },
-                                    supportingContent = {
-                                        SupportingText(
-                                            text = triple.third,
-                                            isSingleLine = true
-                                        )
-                                    }
+                                    supportingContent = { Text(text = triple.second) }
                                 )
                             }
                         }
@@ -247,11 +261,7 @@ private fun Content(
 private fun Preview() {
     Screen(
         navBackStack = rememberNavBackStack(),
-        state = ModelManagerState(
-            isOnEdit = true,
-            isMetadataError = null
-        ),
+        state = UpsertLocalModelState(),
         onAction = {}
     )
 }
-

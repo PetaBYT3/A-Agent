@@ -4,16 +4,12 @@ import com.a.agent.data.local.ModelEntity
 
 data class ModelManagerState(
     val isOnEdit: Boolean = false,
-    val modelEntityToEdit: ModelEntity = ModelEntity.Empty,
 
-    val nameTextField: String = "",
+    val isModelLoading: Boolean = true,
+    val isModelError: String? = null,
+    val model: ModelEntity = ModelEntity.Empty,
 
     val isMetadataLoading: Boolean = false,
     val isMetadataError: String? = null,
-
-    val fileName: String = "",
-    val totalBytes: Long = 0,
-    val isSupported: Boolean = false,
-
-    val urlTextField: String = "",
+    val isModelSupported: Boolean = false,
 )

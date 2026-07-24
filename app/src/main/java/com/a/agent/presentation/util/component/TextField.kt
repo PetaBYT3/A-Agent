@@ -85,7 +85,8 @@ fun CustomTextField(
     isError: Boolean = false,
     trailingIcon: @Composable (() -> Unit)? = null,
     supportingText: @Composable (() -> Unit)? = null,
-    maxLines: Int = 1,
+    singleLine: Boolean = false,
+    maxLines: Int =  if (singleLine) 1 else Int.MAX_VALUE,
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
@@ -103,6 +104,7 @@ fun CustomTextField(
             trailingIcon = trailingIcon,
             supportingText = supportingText,
             maxLines = maxLines,
+            singleLine = singleLine,
             enabled = enabled,
             keyboardOptions = keyboardOptions
         )

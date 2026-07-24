@@ -46,3 +46,26 @@ fun CustomAnimatedContent(
         }
     }
 }
+
+@Composable
+fun <S> CustomFadeAnimatedContent(
+    modifier: Modifier = Modifier,
+    alignment: Alignment = Alignment.CenterStart,
+    targetState: S,
+    content: @Composable ((animatedContentState: S) -> Unit)
+) {
+    AnimatedContent(
+        modifier = modifier
+            .animateContentSize(tween()),
+        targetState = targetState,
+        transitionSpec = { fadeIn(tween()) togetherWith fadeOut(tween()) }
+    ) { animatedContentState ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(),
+            contentAlignment = alignment
+        ) {
+            content(animatedContentState)
+        }
+    }
+}

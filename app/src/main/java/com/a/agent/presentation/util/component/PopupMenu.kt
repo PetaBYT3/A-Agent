@@ -2,9 +2,6 @@ package com.a.agent.presentation.util.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -17,9 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 
 @Composable
 fun CustomPopupMenu(
@@ -33,7 +30,7 @@ fun CustomPopupMenu(
     val expand = {
         isExpanded = true
     }
-    Box() {
+    Box {
         content(expand)
         DropdownMenu(
             modifier = Modifier
@@ -42,9 +39,12 @@ fun CustomPopupMenu(
             expanded = isExpanded,
             onDismissRequest = { isExpanded = false }
         ) {
-            items.forEach { triple ->
+            items.fastForEach { triple ->
                 DropdownMenuItem(
-                    onClick = triple.first,
+                    onClick = {
+                        triple.first()
+                        isExpanded = false
+                    },
                     leadingIcon = { Icon(triple.second, null) },
                     text = { Text(text = triple.third) }
                 )

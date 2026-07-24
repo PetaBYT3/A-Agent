@@ -1,6 +1,5 @@
 package com.a.agent.presentation.model.component
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.a.agent.data.remote.DownloadInfo
-import com.a.agent.presentation.util.component.CustomSlideDownAnimatedVisibility
+import com.a.agent.presentation.util.component.CustomShrinkDownAnimatedVisibility
 import com.a.agent.presentation.util.toMegaByte
 
 @Composable
@@ -20,7 +19,7 @@ fun CustomLinearProgressIndicator(
     modifier: Modifier = Modifier,
     downloadInfo: DownloadInfo?
 ) {
-    CustomSlideDownAnimatedVisibility(
+    CustomShrinkDownAnimatedVisibility(
         visible = downloadInfo != null
     ) {
         Column(

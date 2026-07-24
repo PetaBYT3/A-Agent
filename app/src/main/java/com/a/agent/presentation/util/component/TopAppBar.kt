@@ -26,43 +26,21 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CustomTopAppBar(
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 7.dp),
     onNavigationClick: (() -> Unit)? = null,
     title: String,
     action: @Composable (RowScope.() -> Unit) = {}
 ) {
     TopAppBar(
         modifier = modifier,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent
-        ),
-        contentPadding = contentPadding,
         navigationIcon = {
             if (onNavigationClick != null) {
                 IconButton(
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ),
                     onClick = onNavigationClick,
                     content = { Icon(Icons.Rounded.ArrowBack, null) }
                 )
             }
         },
-        title = {
-            Box(
-                modifier = Modifier
-                    .height(40.dp)
-                    .clip(AbsoluteRoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    modifier = Modifier
-                        .padding(horizontal = 10.dp),
-                    text = title
-                )
-            }
-        },
+        title = { Text(text = title) },
         actions = action
     )
 }

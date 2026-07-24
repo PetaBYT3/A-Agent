@@ -21,6 +21,9 @@ sealed interface NavigationRoute: NavKey {
     data class ModelManagerScreen(val modelId: String = ""): NavigationRoute, NavKey
 
     @Serializable
+    data class UpsertLocalModelScreen(val modelId: String = ""): NavigationRoute, NavKey
+
+    @Serializable
     data class ConversationScreen(val conversationId: String): NavigationRoute, NavKey
 
     @Serializable

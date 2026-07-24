@@ -8,9 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun CustomSlideDownAnimatedVisibility(
+fun CustomShrinkDownAnimatedVisibility(
     modifier: Modifier = Modifier,
     visible: Boolean,
     content: @Composable (() -> Unit)
@@ -44,7 +42,7 @@ fun CustomSlideDownAnimatedVisibility(
 }
 
 @Composable
-fun CustomSlideUpAnimatedVisibility(
+fun CustomShrinkUpAnimatedVisibility(
     modifier: Modifier = Modifier,
     visible: Boolean,
     content: @Composable (() -> Unit)
@@ -64,7 +62,7 @@ fun CustomSlideUpAnimatedVisibility(
 }
 
 @Composable
-fun CustomSlideLeftAnimatedVisibility(
+fun CustomShrinkLeftAnimatedVisibility(
     modifier: Modifier = Modifier,
     visible: Boolean,
     content: @Composable (() -> Unit)
@@ -84,7 +82,7 @@ fun CustomSlideLeftAnimatedVisibility(
 }
 
 @Composable
-fun CustomSlideRightAnimatedVisibility(
+fun CustomShrinkRightAnimatedVisibility(
     modifier: Modifier = Modifier,
     visible: Boolean,
     content: @Composable (() -> Unit)
@@ -98,6 +96,42 @@ fun CustomSlideRightAnimatedVisibility(
         exit = shrinkHorizontally(
             shrinkTowards = Alignment.Start
         ) + fadeOut(tween())
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun CustomSlideUpAnimatedVisibility(
+    modifier: Modifier = Modifier,
+    visible: Boolean,
+    content: @Composable (() -> Unit)
+) {
+    AnimatedVisibility(
+        modifier = modifier,
+        visible = visible,
+        enter = slideInVertically(
+            initialOffsetY = { it }
+        ) + fadeIn(),
+        exit = slideOutVertically(
+            targetOffsetY = { it }
+        ) + fadeOut()
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun CustomFadeAnimatedVisibility(
+    modifier: Modifier = Modifier,
+    visible: Boolean,
+    content: @Composable (() -> Unit)
+) {
+    AnimatedVisibility(
+        modifier = modifier,
+        visible = visible,
+        enter = fadeIn(tween()),
+        exit = fadeOut(tween())
     ) {
         content()
     }

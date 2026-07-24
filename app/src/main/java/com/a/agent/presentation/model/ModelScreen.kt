@@ -2,44 +2,39 @@
 
 package com.a.agent.presentation.model
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.RestartAlt
-import androidx.compose.material.icons.rounded.Textsms
-import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material.icons.rounded.InsertDriveFile
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -47,26 +42,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
-import com.a.agent.data.local.ModelEntity
-import com.a.agent.data.local.ModelType
 import com.a.agent.data.remote.DownloadInfo
-import com.a.agent.presentation.model.component.CustomLinearProgressIndicator
+import com.a.agent.presentation.model.component.AllModelPager
+import com.a.agent.presentation.model.component.DefaultModelPager
+import com.a.agent.presentation.model.component.LocalModelPager
+import com.a.agent.presentation.model.component.ModelFilter
+import com.a.agent.presentation.model.component.UrlModelPager
 import com.a.agent.presentation.navigation.NavigationRoute
 import com.a.agent.presentation.navigation.popBackStack
-import com.a.agent.presentation.util.component.AnimatedContentState
-import com.a.agent.presentation.util.component.CustomAnimatedContent
-import com.a.agent.presentation.util.component.CustomFloatingActionButton
-import com.a.agent.presentation.util.component.CustomSegmentedListItem
 import com.a.agent.presentation.util.component.CustomTopAppBar
-import com.a.agent.presentation.util.component.Message
-import com.a.agent.presentation.util.component.MessageType
-import com.a.agent.presentation.util.component.SupportingText
-import com.a.agent.presentation.util.component.listTitle
-import com.a.agent.presentation.util.component.message
-import com.a.agent.presentation.util.component.spacer
-import com.a.agent.presentation.util.toMegaByte
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
-import java.io.File
 
 @Composable
 fun ModelScreen(
@@ -105,10 +91,52 @@ private fun Screen(
             )
         },
         floatingActionButton = {
-            CustomFloatingActionButton(
-                onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen()) },
-                icon = Icons.Rounded.Add
-            )
+            var isExpanded by rememberSaveable {
+                mutableStateOf(false)
+            }
+            FloatingActionButtonMenu(
+                modifier = Modifier
+                    .offset(x = 12.5.dp, y = 15.dp),
+                expanded = isExpanded,
+                button = {
+                    ToggleFloatingActionButton(
+                        checked = isExpanded,
+                        onCheckedChange = { isExpanded = !isExpanded },
+                        content = {
+                            Icon(
+                                tint = if (isExpanded) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    contentColorFor(FloatingActionButtonDefaults.containerColor)
+                                },
+                                imageVector = if (isExpanded) {
+                                    Icons.Rounded.Close
+                                } else {
+                                    Icons.Rounded.Add
+                                },
+                                contentDescription = null
+                            )
+                        }
+                    )
+                }
+            ) {
+                FloatingActionButtonMenuItem(
+                    onClick = {
+                        isExpanded = false
+                        navBackStack.add(NavigationRoute.ModelManagerScreen())
+                    },
+                    icon = { Icon(Icons.Rounded.Link, null) },
+                    text = { Text(text = "From Url") }
+                )
+                FloatingActionButtonMenuItem(
+                    onClick = {
+                        isExpanded = false
+                        navBackStack.add(NavigationRoute.UpsertLocalModelScreen())
+                    },
+                    icon = { Icon(Icons.Rounded.InsertDriveFile, null) },
+                    text = { Text(text = "From Device") }
+                )
+            }
         }
     )
 }
@@ -120,149 +148,75 @@ private fun Content(
     state: ModelState,
     onAction: (ModelAction) -> Unit
 ) {
-    LazyColumn(
+    val scope = rememberCoroutineScope()
+    Box(
         modifier = Modifier
-            .fillMaxSize(),
-        contentPadding = innerPadding + PaddingValues(start = 15.dp, end = 15.dp, bottom = 15.dp),
-        verticalArrangement = Arrangement.spacedBy(2.5.dp)
+            .fillMaxSize()
+            .padding(innerPadding)
     ) {
-        listTitle("Downloaded Model")
-        item { 
-            CustomAnimatedContent(
-                isLoading = state.isDownloadedModelLoading,
-                isError = state.downloadedModelError != null,
-                isEmpty = state.downloadedModelEntities.isEmpty()
-            ) { animatedContentState ->
-                when (animatedContentState) {
-                    AnimatedContentState.IsLoading -> {
-                        ContainedLoadingIndicator()
-                    }
-                    AnimatedContentState.IsError -> {
-                        Message(
-                            message = state.downloadedModelError ?: "",
-                            messageType = MessageType.Error
-                        )
-                    }
-                    AnimatedContentState.IsEmpty -> {
-                        Message(
-                            message = "No Downloaded Model Available"
-                        )
-                    }
-                    AnimatedContentState.Success -> {}
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            val pagerState = rememberPagerState(
+                pageCount = { ModelFilter.entries.size },
+                initialPage = 0
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp)
+            ) {
+                itemsIndexed(
+                    items = ModelFilter.entries
+                ) { index, modelFilter ->
+                    FilterChip(
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        label = { Text(modelFilter.name) }
+                    )
                 }
             }
-        }
-        itemsIndexed(
-            items = state.downloadedModelEntities
-        ) { index, modelEntity ->
-            val downloadState = state.downloadState[modelEntity.id]
-            CustomSegmentedListItem(
-                onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id)) },
-                index = index,
-                count = state.downloadedModelEntities.size,
-                content = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = modelEntity.name)
-                    }
-                },
-                trailingContent = {
-                    FilledTonalIconButton(
-                        colors = if (downloadState != null) {
-                            IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        } else {
-                            IconButtonDefaults.filledTonalIconButtonColors()
-                        },
-                        onClick = { onAction(ModelAction.ToggleDownload(modelEntity)) },
-                        content = {
-                            Icon(
-                                imageVector = if (downloadState != null) Icons.Rounded.Close else Icons.Rounded.RestartAlt,
-                                contentDescription = null
-                            )
-                        }
-                    )
-                },
-                supportingContent = { Text(text = modelEntity.fileName) },
-                additionalContent = {
-                    CustomLinearProgressIndicator(
-                        downloadInfo = downloadState
-                    )
-                }
-            )
-        }
-        spacer()
-        listTitle("Require Download Model")
-        item {
-            CustomAnimatedContent(
-                isLoading = state.isRequireDownloadModelLoading,
-                isError = state.requireDownloadModelError != null,
-                isEmpty = state.requireDownloadModelEntities.isEmpty()
-            ) { animatedContentState ->
-                when (animatedContentState) {
-                    AnimatedContentState.IsLoading -> {
-                        ContainedLoadingIndicator()
-                    }
-                    AnimatedContentState.IsError -> {
-                        Message(
-                            message = state.requireDownloadModelError ?: "",
-                            messageType = MessageType.Error
+            HorizontalPager(
+                modifier = Modifier
+                    .weight(1f),
+                state = pagerState
+            ) { pagerIndex ->
+                val currentFilter = ModelFilter.entries[pagerIndex]
+                when (currentFilter) {
+                    ModelFilter.All -> {
+                        AllModelPager(
+                            navBackStack = navBackStack,
+                            state = state,
+                            onAction = onAction
                         )
                     }
-                    AnimatedContentState.IsEmpty -> {
-                        Message(
-                            message = "No Require Download Model Available",
-                            messageType = MessageType.Info
+                    ModelFilter.Default -> {
+                        DefaultModelPager(
+                            navBackStack = navBackStack,
+                            state = state,
+                            onAction = onAction
                         )
                     }
-                    AnimatedContentState.Success -> {}
+                    ModelFilter.Url -> {
+                        UrlModelPager(
+                            navBackStack = navBackStack,
+                            state = state,
+                            onAction = onAction
+                        )
+                    }
+                    ModelFilter.Local -> {
+                        LocalModelPager(
+                            navBackStack = navBackStack,
+                            state = state,
+                            onAction = onAction
+                        )
+                    }
                 }
             }
-        }
-        itemsIndexed(
-            items = state.requireDownloadModelEntities
-        ) { index, modelEntity ->
-            val downloadState = state.downloadState[modelEntity.id]
-            CustomSegmentedListItem(
-                onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id)) },
-                index = index,
-                count = state.requireDownloadModelEntities.size,
-                content = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = modelEntity.name)
-                    }
-                },
-                trailingContent = {
-                    FilledTonalIconButton(
-                        colors = if (downloadState != null) {
-                            IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        } else {
-                            IconButtonDefaults.filledTonalIconButtonColors()
-                        },
-                        onClick = { onAction(ModelAction.ToggleDownload(modelEntity)) },
-                        content = {
-                            Icon(
-                                imageVector = if (downloadState != null) Icons.Rounded.Close else Icons.Rounded.Download,
-                                contentDescription = null
-                            )
-                        }
-                    )
-                },
-                supportingContent = { Text(text = modelEntity.fileName) },
-                additionalContent = {
-                    CustomLinearProgressIndicator(
-                        downloadInfo = downloadState
-                    )
-                }
-            )
         }
     }
 }
@@ -273,25 +227,6 @@ private fun Preview() {
     Screen(
         navBackStack = rememberNavBackStack(),
         state = ModelState(
-            downloadedModelEntities = listOf(
-                ModelEntity(
-                    id = "1",
-                    name = "Preview Model",
-                    fileName = "preview.tflite",
-                    totalBytes = 1023921,
-                    path = "",
-                    url = "https://"
-                )
-            ),
-            requireDownloadModelEntities = listOf(
-                ModelEntity(
-                    name = "Preview Model",
-                    url = "",
-                    path = "",
-                    fileName = "preview.litertlm",
-                    totalBytes = 2193123
-                )
-            ),
             downloadState = mutableMapOf("1" to DownloadInfo(0, 0, 0f, 0))
         ),
         onAction = {}

@@ -24,11 +24,12 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.a.agent.presentation.conversation.TextToTextScreen
 import com.a.agent.presentation.home.HomeScreen
+import com.a.agent.presentation.imageview.ImageViewScreen
 import com.a.agent.presentation.model.ModelScreen
 import com.a.agent.presentation.modelmanager.ModelManagerScreen
-import com.a.agent.presentation.conversation.TextToTextScreen
-import com.a.agent.presentation.imageview.ImageViewScreen
+import com.a.agent.presentation.upsertlocalmodel.UpsertLocalModelScreen
 import com.a.agent.presentation.workflow.WorkFlowScreen
 import com.a.agent.presentation.workflowmanagerscreen.WorkflowManagerScreen
 import org.koin.compose.koinInject
@@ -131,6 +132,13 @@ fun NavigationDisplay(
                         content = {
                             val route = navKey as NavigationRoute.ModelManagerScreen
                             ModelManagerScreen(navBackStack, route.modelId)
+                        }
+                    )
+                    is NavigationRoute.UpsertLocalModelScreen -> NavEntry(
+                        key = navKey,
+                        content = {
+                            val route = navKey as NavigationRoute.UpsertLocalModelScreen
+                            UpsertLocalModelScreen(navBackStack, route.modelId)
                         }
                     )
                     is NavigationRoute.ConversationScreen -> NavEntry(

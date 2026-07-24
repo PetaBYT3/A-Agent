@@ -17,7 +17,8 @@ data class ModelEntity(
     val path: String,
     val fileName: String,
     val totalBytes: Long,
-    val isDefaultModel: Boolean = false
+    val modelSource: ModelSource,
+    val isDownloaded: Boolean
 ) {
     companion object {
         val Empty = ModelEntity(
@@ -27,6 +28,8 @@ data class ModelEntity(
             path = "",
             fileName = "",
             totalBytes = 0,
+            modelSource = ModelSource.Default,
+            isDownloaded = false
         )
     }
 }

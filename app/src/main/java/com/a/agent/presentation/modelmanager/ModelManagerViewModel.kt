@@ -6,14 +6,15 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.a.agent.data.local.ModelEntity
+import com.a.agent.data.local.ModelSource
 import com.a.agent.domain.repository.LlmModelManagerRepository
-import com.a.agent.domain.usecase.ModelUseCases
 import com.a.agent.presentation.navigation.Event
 import com.a.agent.presentation.navigation.NavigationDisplayEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -37,24 +38,17 @@ class ModelManagerViewModel(
     private fun initialize() {
         viewModelScope.launch {
             if (modelId.isNotBlank()) {
-                llmModelManagerRepository.getModel(modelId).collect { either ->
-                    either.onRight { modelEntity ->
-                        _state.update {
-                            it.copy(
-                                isOnEdit = true,
-                                isMetadataLoading = true,
-                                modelEntityToEdit = modelEntity,
-                                nameTextField = modelEntity.name,
-                                fileName = modelEntity.fileName,
-                                totalBytes = modelEntity.totalBytes,
-                                urlTextField = modelEntity.url,
-                                isSupported = true
-                            )
-                        }
-                    }.onLeft { error ->
-                        _state.update { it.copy(isMetadataError = error) }
+                llmModelManagerRepository.getModel(modelId).first().onRight { modelEntity ->
+                    _state.update {
+                        it.copy(
+                            isOnEdit = true,
+                            model = modelEntity,
+                            isModelSupported = true,
+                            isModelLoading = false
+                        )
                     }
-                    _state.update { it.copy(isMetadataLoading = false) }
+                }.onLeft { error ->
+                    _state.update { it.copy(isModelError = error, isModelLoading = false) }
                 }
             }
         }
@@ -64,7 +58,7 @@ class ModelManagerViewModel(
         when (action) {
             is ModelManagerAction.UrlTextField -> urlTextField(action.url)
             is ModelManagerAction.NameTextField -> {
-                _state.update { it.copy(nameTextField = action.name) }
+                _state.update { it.copy(model = it.model.copy(name = action.name)) }
             }
             ModelManagerAction.UpsertModel -> upsertModel()
             ModelManagerAction.DeleteModel -> deleteModel()
@@ -74,42 +68,44 @@ class ModelManagerViewModel(
     private var searchJob: Job? = null
 
     private fun urlTextField(url: String) {
-        _state.update { it.copy(urlTextField = url) }
+        _state.update { it.copy(model = it.model.copy(url = url)) }
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(500.milliseconds)
             if (url.isNotBlank()) {
                 llmModelManagerRepository.getModelMetadata(
-                    url = _state.value.urlTextField
+                    url = _state.value.model.url
                 ).onStart {
-                    _state.update { it.copy(isMetadataLoading = true, isMetadataError = null) }
+                    _state.update { it.copy(model = ModelEntity.Empty, isMetadataLoading = true, isMetadataError = null) }
                 }.collect { either ->
                     either.onRight { modelMetadataDto ->
                         _state.update {
                             it.copy(
-                                fileName = modelMetadataDto.fileName,
-                                totalBytes = modelMetadataDto.totalBytes,
-                                isSupported = modelMetadataDto.isSupported
+                                model = it.model.copy(
+                                    fileName = modelMetadataDto.fileName,
+                                    totalBytes = modelMetadataDto.totalBytes,
+                                ),
+                                isModelSupported = modelMetadataDto.isSupported,
+                                isMetadataLoading = false
                             )
                         }
                     }.onLeft { error ->
-                        _state.update { it.copy(isMetadataError = error) }
+                        _state.update { it.copy(isMetadataError = error, isMetadataLoading = false) }
                     }
-                    _state.update { it.copy(isMetadataLoading = false) }
                 }
             }
         }
     }
 
     private fun upsertModel() = viewModelScope.launch {
-        val modelEntity = ModelEntity(
-            id = modelId.ifBlank { Uuid.random().toString() },
-            name = _state.value.nameTextField,
-            url = _state.value.urlTextField,
-            path = File(application.getExternalFilesDir(null), "model" + File.separator + _state.value.fileName).absolutePath,
-            fileName = _state.value.fileName,
-            totalBytes = _state.value.totalBytes,
+        val modelEntity = _state.value.model.copy(
+            id = _state.value.model.id.ifBlank { Uuid.random().toString() },
+            path = _state.value.model.path.ifBlank {
+                File(application.getExternalFilesDir(null), "model" + File.separator + _state.value.model.fileName).absolutePath
+            },
+            modelSource = ModelSource.Url,
+            isDownloaded = false
         )
         llmModelManagerRepository.upsertModel(modelEntity).collect { either ->
             either.onRight {
@@ -121,7 +117,7 @@ class ModelManagerViewModel(
     }
 
     private fun deleteModel() = viewModelScope.launch {
-        llmModelManagerRepository.deleteModel(_state.value.modelEntityToEdit).collect { either ->
+        llmModelManagerRepository.deleteModel(_state.value.model).collect { either ->
             either.onRight {
                 navigationDisplayEvent.sendEvent(Event.PopBackStack)
             }.onLeft { error ->
