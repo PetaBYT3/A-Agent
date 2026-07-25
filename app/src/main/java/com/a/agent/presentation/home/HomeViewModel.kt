@@ -40,10 +40,13 @@ class HomeViewModel(
                 _state.update { it.copy(isLlmModelEngineConfigurationLoading = true) }
             }.collectLatest { either ->
                 either.onRight { pair ->
-                    _state.update { it.copy(
-                        llmModelEngineConfiguration = pair.first,
-                        selectedModelEntity = pair.second,
-                        isLlmModelEngineConfigurationLoading = false) }
+                    _state.update {
+                        it.copy(
+                            llmModelEngineConfiguration = pair.first,
+                            selectedModelEntity = pair.second,
+                            isLlmModelEngineConfigurationLoading = false
+                        )
+                    }
                 }.onLeft { error ->
                     _state.update { it.copy(isLlmModelEngineConfigurationError = error, isLlmModelEngineConfigurationLoading = false) }
                 }
@@ -175,11 +178,10 @@ class HomeViewModel(
         )
         llmModelEngineRepository.upsertConversation(conversationEntity).collect { either ->
             either.onRight {
-                navigationDisplayEvent.sendEvent(Event.ShowSnackBar("Engine Initialized"))
+                _state.update { it.copy(conversationNameTextField = "") }
             }.onLeft { error ->
                 navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
             }
-            _state.update { it.copy(conversationNameTextField = "") }
         }
     }
 }

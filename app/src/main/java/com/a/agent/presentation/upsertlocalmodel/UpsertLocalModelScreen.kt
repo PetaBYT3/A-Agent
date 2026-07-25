@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AttachFile
@@ -24,7 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -89,50 +86,34 @@ private fun Screen(
                 onAction = onAction
             )
         },
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 25.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                CustomShrinkLeftAnimatedVisibility(
-                    visible = !state.isOnEdit
-                ) {
+        floatingActionButton = {
+            Row {
+                if (state.isOnEdit) {
+                    CustomFloatingActionButton(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        onClick = { onAction(UpsertLocalModelAction.DeleteModelButton) },
+                        icon = Icons.Rounded.Delete
+                    )
+                } else {
                     val filePicker = rememberFilePickerLauncher(
                         type = FileKitType.File(),
                         onResult = { platformFile ->
                             onAction(UpsertLocalModelAction.FilePickerButton(platformFile))
                         }
                     )
-                    Row {
-                        Spacer(modifier = Modifier.width(10.dp))
-                        CustomFloatingActionButton(
-                            onClick = { filePicker.launch() },
-                            icon = Icons.Rounded.AttachFile
-                        )
-                    }
-                }
-                CustomShrinkLeftAnimatedVisibility(
-                    visible = state.isOnEdit
-                ) {
-                    Row {
-                        Spacer(modifier = Modifier.width(10.dp))
-                        CustomFloatingActionButton(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                            onClick = { onAction(UpsertLocalModelAction.DeleteModelButton) },
-                            icon = Icons.Rounded.Delete
-                        )
-                    }
+                    CustomFloatingActionButton(
+                        onClick = { filePicker.launch() },
+                        icon = Icons.Rounded.AttachFile
+                    )
                 }
                 CustomShrinkLeftAnimatedVisibility(
                     visible = state.model.name.isNotBlank()
                 ) {
                     Row {
-                        Spacer(modifier = Modifier.width(10.dp))
                         CustomFloatingActionButton(
+                            modifier = Modifier
+                                .padding(start = 10.dp),
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
                             onClick = { onAction(UpsertLocalModelAction.UpsertModelButton) },
@@ -245,7 +226,7 @@ private fun Content(
                                     count = metadataItem.size,
                                     leadingContent = { Icon(triple.first, null) },
                                     content = { Text(text = triple.second) },
-                                    supportingContent = { Text(text = triple.second) }
+                                    supportingContent = { Text(text = triple.third) }
                                 )
                             }
                         }

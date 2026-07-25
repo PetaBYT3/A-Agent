@@ -1,9 +1,6 @@
 package com.a.agent.presentation.conversation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,10 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,15 +52,15 @@ import com.a.agent.presentation.conversation.component.ChatBubble
 import com.a.agent.presentation.conversation.component.ChatLoading
 import com.a.agent.presentation.navigation.NavigationRoute
 import com.a.agent.presentation.navigation.popBackStack
-import com.a.agent.presentation.util.component.BannerItem
-import com.a.agent.presentation.util.component.BannerType
-import com.a.agent.presentation.util.component.CustomBannerHolder
+import com.a.agent.presentation.util.component.CustomFadeAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomFadeBox
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomShrinkUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
-import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
+import com.a.agent.presentation.util.component.CustomTransparentTextField
+import com.a.agent.presentation.util.component.Message
+import com.a.agent.presentation.util.component.MessageType
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import kotlinx.coroutines.launch
@@ -123,75 +119,80 @@ private fun Screen(
         },
         bottomBar = {
             CustomSlideUpAnimatedVisibility(
-                visible = !state.isConversationInitializing && state.isEngineOnline,
+                visible = !state.isConversationInitializing && state.isEngineOnline == true,
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 25.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .navigationBarsPadding(),
                 ) {
-                    CustomShrinkUpAnimatedVisibility(
-                        visible = state.imageInput != null
+                    Column(
+                        modifier = Modifier
+                            .padding(15.dp)
                     ) {
-                        BadgedBox(
-                            modifier = Modifier
-                                .padding(bottom = 10.dp),
-                            badge = {
-                                Badge {
-                                    IconButton(
-                                        modifier = Modifier
-                                            .size(10.dp),
-                                        onClick = { onAction(ConversationAction.ImageInputPicker(null)) },
-                                        content = { Icon(Icons.Rounded.Close, null) }
-                                    )
-                                }
-                            }
+                        CustomShrinkUpAnimatedVisibility(
+                            visible = state.imageInput != null
                         ) {
-                            AsyncImage(
+                            BadgedBox(
                                 modifier = Modifier
-                                    .size(50.dp)
-                                    .clip(AbsoluteRoundedCornerShape(15.dp))
-                                    .clickable(
-                                        enabled = true,
-                                        onClick = { navBackStack.add(NavigationRoute.ImageViewScreen(state.imageInput!!)) }
-                                    ),
-                                model = state.imageInput,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop
+                                    .padding(bottom = 10.dp),
+                                badge = {
+                                    Badge {
+                                        IconButton(
+                                            modifier = Modifier
+                                                .size(10.dp),
+                                            onClick = { onAction(ConversationAction.ImageInputPicker(null)) },
+                                            content = { Icon(Icons.Rounded.Close, null) }
+                                        )
+                                    }
+                                }
+                            ) {
+                                AsyncImage(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(AbsoluteRoundedCornerShape(15.dp))
+                                        .clickable(
+                                            enabled = true,
+                                            onClick = { navBackStack.add(NavigationRoute.ImageViewScreen(state.imageInput!!)) }
+                                        ),
+                                    model = state.imageInput,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            CustomTransparentTextField(
+                                modifier = Modifier
+                                    .weight(1f),
+                                placeholder = { Text(text = "Prompt") },
+                                value = state.promptTextField,
+                                onValueChange = { onAction(ConversationAction.PromptTextField(it)) },
+                                maxLines = 3
+                            )
+                            val galleryPicker = rememberFilePickerLauncher(
+                                type = FileKitType.Image,
+                                onResult = { platformFile ->
+                                    if (platformFile != null) {
+                                        onAction(ConversationAction.ImageInputPicker(platformFile))
+                                    }
+                                }
+                            )
+                            CustomFloatingActionButton(
+                                onClick = { galleryPicker.launch() },
+                                icon = Icons.Rounded.Image
+                            )
+                            CustomFloatingActionButton(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                onClick = { onAction(ConversationAction.GenerateButton) },
+                                icon = Icons.Rounded.Send
                             )
                         }
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        CustomTextField(
-                            modifier = Modifier
-                                .weight(1f),
-                            placeholder = { Text(text = "Prompt") },
-                            value = state.promptTextField,
-                            onValueChange = { onAction(ConversationAction.PromptTextField(it)) },
-                            maxLines = 3
-                        )
-                        val galleryPicker = rememberFilePickerLauncher(
-                            type = FileKitType.Image,
-                            onResult = { platformFile ->
-                                if (platformFile != null) {
-                                    onAction(ConversationAction.ImageInputPicker(platformFile))
-                                }
-                            }
-                        )
-                        CustomFloatingActionButton(
-                            onClick = { galleryPicker.launch() },
-                            icon = Icons.Rounded.Image
-                        )
-                        CustomFloatingActionButton(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            onClick = { onAction(ConversationAction.GenerateButton) },
-                            icon = Icons.Rounded.Send
-                        )
                     }
                 }
             }
@@ -207,103 +208,100 @@ private fun Content(
     onAction: (ConversationAction) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-
     Box(
         modifier = Modifier
-            .fillMaxSize()
             .padding(innerPadding)
     ) {
-        var bannerHeight by remember {
-            mutableStateOf(0.dp)
-        }
-        CustomBannerHolder { height ->
-            bannerHeight = height
-
-            if (!state.isEngineOnline) {
-                BannerItem(
-                    message = "Engine Offline. You can only read the chat",
-                    bannerType = BannerType.Warning
-                )
-            }
-
-            when {
-                state.isConversationInitializing -> {
-                    LinearWavyProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    )
-                }
-                state.isConversationInitializeError != null -> {
-                    BannerItem(
-                        message = state.isConversationInitializeError,
-                        bannerType = BannerType.Error
-                    )
-                }
-                state.chatEntities.isEmpty() -> {
-                    BannerItem(
-                        message = "Empty Chat",
-                        bannerType = BannerType.Info
-                    )
-                }
-            }
-        }
         val listState = rememberLazyListState()
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = bannerHeight),
+            contentPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 15.dp),
             verticalArrangement = Arrangement.spacedBy(15.dp)
         ) {
-            if (state.isConversationInitializing) {
-                item {
-                    LinearWavyProgressIndicator(
+            if (state.isEngineOnline == false) {
+                stickyHeader(key = "isEngineOffline") {
+                    Message(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem()
+                            .animateItem(),
+                        message = "Engine Offline, You Can Only Read The Chat",
+                        messageType = MessageType.Warning
                     )
                 }
             }
-            items(
-                items = state.chatEntities
-            ) { chatEntity ->
-                ChatBubble(
-                    modifier = Modifier
-                        .animateItem(),
-                    fromUser = chatEntity.fromUser,
-                    imagePath = chatEntity.imagePath,
-                    onImageClick = { navBackStack.add(NavigationRoute.ImageViewScreen(chatEntity.imagePath!!)) },
-                    message = chatEntity.chat
-                )
-            }
-            if (state.isModelThinking) {
-                item {
-                    ChatLoading(
-                        modifier = Modifier
-                            .animateItem()
-                    )
+            when {
+                state.isConversationInitializing -> {
+                    item(key = "isConversationInitializing") {
+                        LinearWavyProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItem()
+                        )
+                    }
+                }
+                state.isConversationInitializeError != null -> {
+                    item(key = "isConversationInitializeError") {
+                        Message(
+                            modifier = Modifier
+                                .animateItem(),
+                            message = state.isConversationInitializeError,
+                            messageType = MessageType.Error
+                        )
+                    }
+                }
+                state.chatEntities.isEmpty() -> {
+                    item(key = "isChatEntitiesEmpty") {
+                        Message(
+                            modifier = Modifier
+                                .animateItem(),
+                            message = "Empty Chat"
+                        )
+                    }
+                }
+                else -> {
+                    items(
+                        items = state.chatEntities,
+                        key = { it.id }
+                    ) { chatEntity ->
+                        ChatBubble(
+                            modifier = Modifier
+                                .animateItem(),
+                            fromUser = chatEntity.fromUser,
+                            imagePath = chatEntity.imagePath,
+                            onImageClick = { navBackStack.add(NavigationRoute.ImageViewScreen(chatEntity.imagePath!!)) },
+                            message = chatEntity.chat
+                        )
+                    }
+                    if (state.isModelThinking) {
+                        item(key = "isModelThinking") {
+                            ChatLoading(
+                                modifier = Modifier
+                                    .animateItem()
+                            )
+                        }
+                    }
                 }
             }
         }
         val showScrollToBottomButton by remember {
             derivedStateOf { listState.canScrollForward }
         }
-        AnimatedVisibility(
+        CustomFadeAnimatedVisibility(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 10.dp),
-            visible = showScrollToBottomButton,
-            enter = fadeIn(tween()),
-            exit = fadeOut(tween())
+            visible = showScrollToBottomButton
         ) {
             IconButton(
                 colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 onClick = {
                     scope.launch {
                         if (state.chatEntities.isNotEmpty()) {
-                            listState.animateScrollToItem(state.chatEntities.lastIndex)
+                            listState.animateScrollToItem(state.chatEntities.lastIndex, Int.MAX_VALUE)
                         }
                     }
                 },
@@ -319,6 +317,7 @@ private fun Preview() {
     Screen(
         navBackStack = rememberNavBackStack(),
         state = ConversationState(
+            isEngineOnline = true,
             isConversationInitializing = false,
             conversationEntity = ConversationEntity(
                 title = "Conversation Title"

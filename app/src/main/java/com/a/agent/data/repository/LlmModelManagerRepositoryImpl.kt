@@ -26,8 +26,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -72,19 +72,24 @@ class LlmModelManagerRepositoryImpl(
         }
     }
 
-    override suspend fun getLlmModelEngineConfiguration(): Flow<Either<String, Pair<LlmModelEngineConfiguration, ModelEntity>>> = channelFlow {
+    override suspend fun getLlmModelEngineConfiguration(): Flow<Either<String, Pair<LlmModelEngineConfiguration, ModelEntity>>> = flow {
         try {
-            agentDataStore.llmModelEngineConfiguration.collectLatest { llmModelEngineConfiguration ->
-                if (llmModelEngineConfiguration.selectedModelId.isBlank()) {
-                    send(Either.Left("No Model Selected"))
-                }
-
-                agentDatabase.modelDao.getModel(llmModelEngineConfiguration.selectedModelId).collect { modelEntity ->
-                    send(Either.Right(Pair(llmModelEngineConfiguration, modelEntity ?: ModelEntity.Empty)))
-                }
+            val llmModelConfigurationFlow = agentDataStore.llmModelEngineConfiguration
+            val modelEntityFlow = agentDataStore.llmModelEngineConfiguration.flatMapLatest { llmModelEngineConfiguration ->
+                agentDatabase.modelDao.getModel(llmModelEngineConfiguration.selectedModelId)
             }
+
+            val pair = llmModelConfigurationFlow.combine(modelEntityFlow) { llmModelEngineConfiguration, modelEntity ->
+                Either.Right(
+                    Pair(
+                        first = llmModelEngineConfiguration,
+                        second = modelEntity ?: ModelEntity.Empty
+                    )
+                )
+            }
+            emitAll(pair)
         } catch (e: Exception) {
-            send(Either.Left(e.message ?: "Unknown Error"))
+            emit(Either.Left(e.message ?: "Unknown Error"))
         }
     }.flowOn(Dispatchers.IO)
 

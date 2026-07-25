@@ -82,7 +82,6 @@ fun CustomSegmentedListItem(
 
 fun LazyListScope.listTitle(
     title: String,
-    onSurface: Boolean = true,
     content: @Composable (() -> Unit)? = null
 ) {
     item {
@@ -92,7 +91,7 @@ fun LazyListScope.listTitle(
                 .height(AssistChipDefaults.Height),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SupportingText(
+            HeadlineText(
                 modifier = Modifier
                     .padding(horizontal = 10.dp, vertical = 5.dp),
                 text = title
@@ -187,11 +186,6 @@ fun Message(
         count = count,
         leadingContent = {
             Icon(
-                tint = when (messageType) {
-                    MessageType.Info -> LocalContentColor.current
-                    MessageType.Warning -> Color.Yellow
-                    MessageType.Error -> MaterialTheme.colorScheme.error
-                },
                 imageVector = when (messageType) {
                     MessageType.Info -> Icons.Rounded.Info
                     MessageType.Warning -> Icons.Rounded.Warning
@@ -202,7 +196,8 @@ fun Message(
         },
         content = {
             SupportingText(
-                text = message
+                text = message,
+                isSingleLine = false
             )
         }
     )
@@ -244,6 +239,6 @@ fun LazyListScope.itemRow(
     }
 }
 
-fun LazyListScope.spacer(dp: Dp = 10.dp) {
+fun LazyListScope.spacer(dp: Dp = 5.dp) {
     item { Spacer(modifier = Modifier.height(dp)) }
 }

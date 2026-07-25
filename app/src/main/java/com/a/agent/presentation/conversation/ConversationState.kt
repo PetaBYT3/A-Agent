@@ -2,10 +2,9 @@ package com.a.agent.presentation.conversation
 
 import com.a.agent.data.local.ChatEntity
 import com.a.agent.data.local.ConversationEntity
-import io.github.vinceglb.filekit.PlatformFile
 
 data class ConversationState(
-    val isEngineOnline: Boolean = false,
+    val isEngineOnline: Boolean? = null,
 
     val isConversationInitializing: Boolean = false,
     val isConversationInitializeError: String? = null,

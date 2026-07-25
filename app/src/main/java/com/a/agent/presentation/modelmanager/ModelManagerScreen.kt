@@ -2,16 +2,13 @@
 
 package com.a.agent.presentation.modelmanager
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
@@ -27,7 +24,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,18 +32,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
-import com.a.agent.data.local.ModelEntity
 import com.a.agent.data.local.ModelSource
 import com.a.agent.presentation.navigation.popBackStack
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
 import com.a.agent.presentation.util.component.CustomShrinkLeftAnimatedVisibility
-import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.Message
 import com.a.agent.presentation.util.component.MessageType
 import com.a.agent.presentation.util.component.SupportingText
+import com.a.agent.presentation.util.component.spacer
 import com.a.agent.presentation.util.toMegaByte
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -91,50 +86,33 @@ private fun Screen(
                 onAction = onAction
             )
         },
-        bottomBar = {
-            CustomSlideUpAnimatedVisibility(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface),
-                visible = state.model.modelSource != ModelSource.Default
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 10.dp, vertical = 25.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CustomTextField(
-                        modifier = Modifier
-                            .weight(1f),
-                        placeholder = { Text(text = "Direct Link Url") },
-                        value = state.model.url,
-                        onValueChange = { onAction(ModelManagerAction.UrlTextField(it)) },
-                        singleLine = true,
-                        enabled = !state.isOnEdit
+        floatingActionButton = {
+            Row {
+                if (state.isOnEdit && state.model.modelSource != ModelSource.Default) {
+                    CustomFloatingActionButton(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        onClick = { onAction(ModelManagerAction.DeleteModel) },
+                        icon = Icons.Rounded.Delete
                     )
-                    CustomShrinkLeftAnimatedVisibility(
-                        visible = state.isOnEdit
-                    ) {
-                        Row {
-                            Spacer(modifier = Modifier.width(10.dp))
-                            CustomFloatingActionButton(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                onClick = { onAction(ModelManagerAction.DeleteModel) },
-                                icon = Icons.Rounded.Delete
-                            )
-                        }
-                    }
-                    CustomShrinkLeftAnimatedVisibility(
-                        visible = state.model != ModelEntity.Empty || state.model.url.isNotBlank() || state.model.name.isNotBlank()
-                    ) {
-                        Row {
-                            Spacer(modifier = Modifier.width(10.dp))
-                            CustomFloatingActionButton(
-                                onClick = { onAction(ModelManagerAction.UpsertModel) },
-                                icon = Icons.Rounded.Save
-                            )
-                        }
-                    }
+                }
+                val isReadyToSave = state.model.url.isNotBlank() &&
+                        state.model.name.isNotBlank() &&
+                        state.model.fileName.isNotBlank() &&
+                        state.model.totalBytes != 0L &&
+                        state.model.modelSource != ModelSource.Default &&
+                        state.isModelSupported
+                CustomShrinkLeftAnimatedVisibility(
+                    visible = isReadyToSave
+                ) {
+                    CustomFloatingActionButton(
+                        modifier = Modifier
+                            .padding(start = 10.dp),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        onClick = { onAction(ModelManagerAction.UpsertModel) },
+                        icon = Icons.Rounded.Save
+                    )
                 }
             }
         }
@@ -155,6 +133,18 @@ private fun Content(
         contentPadding = PaddingValues(horizontal = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
+        item(key = "urlTextField") {
+            CustomTextField(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                label = { Text(text = "Direct Download Link Url") },
+                value = state.model.url,
+                onValueChange = { onAction(ModelManagerAction.UrlTextField(it)) },
+                singleLine = true,
+                enabled = !state.isOnEdit
+            )
+        }
+        spacer()
         when {
             state.isMetadataLoading -> {
                 item(key = "isMetadataLoading") {

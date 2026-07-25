@@ -3,6 +3,7 @@
 package com.a.agent.data.repository
 
 import android.app.Application
+import android.os.Process
 import androidx.room.withTransaction
 import arrow.core.Either
 import com.a.agent.data.local.AgentDataStore
@@ -10,7 +11,6 @@ import com.a.agent.data.local.AgentDatabase
 import com.a.agent.data.local.ChatEntity
 import com.a.agent.data.local.ConversationEntity
 import com.a.agent.domain.model.GenerateState
-import com.a.agent.domain.model.InitializeConversationResult
 import com.a.agent.domain.model.LlmModelEngineBackend
 import com.a.agent.domain.repository.LlmModelEngineRepository
 import com.google.ai.edge.litertlm.Backend
@@ -21,24 +21,20 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
-import io.github.vinceglb.filekit.PlatformFile
-import io.github.vinceglb.filekit.dialogs.compose.util.encodeToByteArray
-import io.github.vinceglb.filekit.dialogs.compose.util.toImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -64,6 +60,7 @@ class LlmModelEngineRepositoryImpl(
 
     override suspend fun initializeEngine(modelPath: File): Flow<Either<String, Unit>> = flow {
         try {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
             val llmModelEngineConfiguration = agentDataStore.llmModelEngineConfiguration.first()
 
             val engineConfig = EngineConfig(
@@ -85,6 +82,7 @@ class LlmModelEngineRepositoryImpl(
         try {
             conversation?.close()
             engine?.close()
+            delay(2.seconds)
             _isLlmModelEngineOnline.update { false }
             emit(Either.Right(Unit))
         } catch (e: Exception) {

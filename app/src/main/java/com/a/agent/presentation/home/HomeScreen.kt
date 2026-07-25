@@ -3,17 +3,15 @@
 package com.a.agent.presentation.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
@@ -25,8 +23,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,11 +30,13 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,19 +53,19 @@ import com.a.agent.data.local.ModelSource
 import com.a.agent.domain.model.LlmModelEngineBackend
 import com.a.agent.domain.model.LlmModelEngineConfiguration
 import com.a.agent.presentation.navigation.NavigationRoute
-import com.a.agent.presentation.util.component.BannerItem
-import com.a.agent.presentation.util.component.BannerType
 import com.a.agent.presentation.util.component.CustomComposableBottomSheet
 import com.a.agent.presentation.util.component.CustomEmptyBottomSheet
-import com.a.agent.presentation.util.component.CustomFadeAnimatedContent
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomPopupMenu
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
+import com.a.agent.presentation.util.component.CustomShrinkLeftAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.CustomUndismissableBottomSheet
-import com.a.agent.presentation.util.component.HeadlineText
-import com.a.agent.presentation.util.component.TrailingText
+import com.a.agent.presentation.util.component.Message
+import com.a.agent.presentation.util.component.MessageType
+import com.a.agent.presentation.util.component.SupportingText
+import com.a.agent.presentation.util.component.TitleText
 import com.a.agent.presentation.util.component.itemColumn
 import com.a.agent.presentation.util.component.listTitle
 import com.a.agent.presentation.util.component.spacer
@@ -116,22 +114,26 @@ private fun Screen(
         },
         floatingActionButton = {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(15.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                CustomFloatingActionButton(
-                    containerColor = if (state.isModelEngineOnline) {
-                        MaterialTheme.colorScheme.errorContainer
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    contentColor = if (state.isModelEngineOnline) {
-                        MaterialTheme.colorScheme.onErrorContainer
-                    } else {
-                        MaterialTheme.colorScheme.onPrimary
-                    },
-                    onClick = { onAction(HomeAction.ToggleModelEngine) },
-                    icon = if (state.isModelEngineOnline) Icons.Rounded.Stop else Icons.Rounded.PlayArrow
-                )
+                CustomShrinkLeftAnimatedVisibility(
+                    visible = state.selectedModelEntity != ModelEntity.Empty
+                ) {
+                    CustomFloatingActionButton(
+                        containerColor = if (state.isModelEngineOnline) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        contentColor = if (state.isModelEngineOnline) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary
+                        },
+                        onClick = { onAction(HomeAction.ToggleModelEngine) },
+                        icon = if (state.isModelEngineOnline) Icons.Rounded.Stop else Icons.Rounded.PlayArrow
+                    )
+                }
                 CustomFloatingActionButton(
                     onClick = { onAction(HomeAction.UpsertConversationBottomSheet) },
                     icon = Icons.Rounded.Add
@@ -143,25 +145,46 @@ private fun Screen(
     CustomEmptyBottomSheet(
         isBottomSheetVisible = state.downloadedModelBottomSheet,
         content = {
-            listTitle("Change Model", false)
-            itemsIndexed(
-                items = state.downloadedModels
-            ) { index, modelEntity ->
-                CustomSegmentedListItem(
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ),
-                    index = index,
-                    count = state.downloadedModels.size,
-                    onClick = { onAction(HomeAction.SelectModel(modelEntity)) },
-                    content = { Text(text = modelEntity.name) },
-                    supportingContent = { Text(text = modelEntity.fileName) },
-                    trailingContent = {
-                        if (state.selectedModelEntity.id == modelEntity.id) {
-                            Icon(Icons.Rounded.Check, null)
-                        }
+            listTitle("Change Model")
+            when {
+                state.downloadedModels.isEmpty() -> {
+                    item(key = "isDownloadedModelsEmpty") {
+                        Message(
+                            modifier = Modifier
+                                .animateItem(),
+                            message = "Downloaded Model Empty"
+                        )
                     }
-                )
+                }
+                else -> {
+                    itemsIndexed(
+                        items = state.downloadedModels,
+                        key = { index, modelEntity -> modelEntity.id }
+                    ) { index, modelEntity ->
+                        CustomSegmentedListItem(
+                            modifier = Modifier
+                                .animateItem(),
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ),
+                            index = index,
+                            count = state.downloadedModels.size,
+                            onClick = { onAction(HomeAction.SelectModel(modelEntity)) },
+                            content = { Text(text = modelEntity.name) },
+                            supportingContent = {
+                                SupportingText(
+                                    text = modelEntity.fileName,
+                                    isSingleLine = true
+                                )
+                            },
+                            trailingContent = {
+                                if (state.selectedModelEntity.id == modelEntity.id) {
+                                    Icon(Icons.Rounded.Check, null)
+                                }
+                            }
+                        )
+                    }
+                }
             }
         },
         onCancel = { onAction(HomeAction.DownloadedModelBottomSheet) }
@@ -170,7 +193,7 @@ private fun Screen(
     CustomEmptyBottomSheet(
         isBottomSheetVisible = state.llmModelEngineConfigurationBottomSheet,
         content = {
-            listTitle("Model Settings", false)
+            listTitle("Model Configuration")
             itemColumn(
                 verticalArrangement = Arrangement.spacedBy(2.5.dp)
             ) {
@@ -242,7 +265,7 @@ private fun Screen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    HeadlineText(
+                    TitleText(
                         text = if (state.isModelEngineOnline) {
                             "Shutting Down The Model Engine..."
                         } else {
@@ -287,131 +310,156 @@ private fun Content(
                 )
             }
         )
-        item {
-            CustomFadeAnimatedContent(
-                targetState = when {
-                    state.isLlmModelEngineConfigurationLoading -> true
-                    else -> false
+        when {
+            state.isLlmModelEngineConfigurationLoading -> {
+                item(key = "isLlmModelEngineConfigurationError") {
+                    LinearWavyProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem()
+                    )
                 }
-            ) { animatedContentState ->
-                when (animatedContentState) {
-                    true -> {
-                        LinearWavyProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
+            }
+            state.isLlmModelEngineConfigurationError != null -> {
+                item(key = "isLlmModelEngineConfigurationError") {
+                    Message(
+                        modifier = Modifier
+                            .animateItem(),
+                        message = state.isLlmModelEngineConfigurationError,
+                        messageType = MessageType.Error
+                    )
+                }
+            }
+            state.selectedModelEntity == ModelEntity.Empty -> {
+                item(key = "noModelSelected") {
+                    Message(
+                        modifier = Modifier
+                            .animateItem(),
+                        message = "No Model Selected",
+                        messageType = MessageType.Warning
+                    )
+                }
+            }
+            else -> {
+                item(key = "selectedModel") {
+                    CustomSegmentedListItem(
+                        modifier = Modifier
+                            .animateItem(),
+                        colors = ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        overline = {
+                            Text(
+                                color = if (state.isModelEngineOnline) Color.Green else Color.Red,
+                                text = if (state.isModelEngineOnline) "Online" else "Offline"
+                            )
+                        },
+                        content = {
+                            Text(
+                                text = state.selectedModelEntity.name,
+                                style = MaterialTheme.typography.displaySmall,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    )
+                }
+            }
+        }
+        item(key = "changeAndConfigurationButton") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateItem(),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                SplitButtonLayout(
+                    leadingButton = {
+                        SplitButtonDefaults.LeadingButton(
+                            onClick = { onAction(HomeAction.DownloadedModelBottomSheet) },
+                            content = { Text(text = "Change") },
+                            enabled = !state.isModelEngineOnline
+                        )
+                    },
+                    trailingButton = {
+                        SplitButtonDefaults.TrailingButton(
+                            onClick = { onAction(HomeAction.LlmModelEngineConfigurationBottomSheet) },
+                            content = { Text(text = "Configuration") },
+                            enabled = !state.isModelEngineOnline
                         )
                     }
-                    false -> {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = AbsoluteRoundedCornerShape(25.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(15.dp)
-                            ) {
-                                TrailingText(
-                                    color = if (state.isModelEngineOnline) Color.Green else MaterialTheme.colorScheme.error,
-                                    text = if (state.isModelEngineOnline) "Online" else "Offline"
-                                )
-                                if (state.selectedModelEntity != ModelEntity.Empty) {
-                                    Text(
-                                        text = state.selectedModelEntity.name,
-                                        style = MaterialTheme.typography.displaySmall,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                } else {
-                                    Text(
-                                        color = MaterialTheme.colorScheme.error,
-                                        text = "No Model !",
-                                        style = MaterialTheme.typography.displaySmall,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(15.dp))
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    OutlinedButton(
-                                        onClick = { onAction(HomeAction.DownloadedModelBottomSheet) },
-                                        content = { Text(text = "Change") }
-                                    )
-                                    OutlinedButton(
-                                        onClick = { onAction(HomeAction.LlmModelEngineConfigurationBottomSheet) },
-                                        content = { Text(text = "Configure") }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                )
             }
         }
         spacer()
         listTitle("Conversation")
-        item {
-            when {
-                state.isConversationsLoading -> {
+        when {
+            state.isConversationsLoading -> {
+                item(key = "isConversationLoading") {
                     LinearWavyProgressIndicator(
                         modifier = Modifier
                             .animateItem()
                             .fillMaxWidth()
                     )
                 }
-                state.conversationError != null -> {
-                    BannerItem(
+            }
+            state.conversationError != null -> {
+                item(key = "isConversationError") {
+                    Message(
                         modifier = Modifier
                             .animateItem(),
                         message = state.conversationError,
-                        bannerType = BannerType.Error
-                    )
-                }
-                state.conversationEntities.isEmpty() -> {
-                    BannerItem(
-                        modifier = Modifier
-                            .animateItem(),
-                        message = "Empty Conversation",
-                        bannerType = BannerType.Info
+                        messageType = MessageType.Error
                     )
                 }
             }
-        }
-        itemsIndexed(
-            items = state.conversationEntities
-        ) { index, conversationEntity ->
-            CustomSegmentedListItem(
-                onClick = { navBackStack.add(NavigationRoute.ConversationScreen(conversationEntity.id)) },
-                index = index,
-                count = state.conversationEntities.size,
-                content = { Text(text = conversationEntity.title) },
-                trailingContent = {
-                    val items = listOf(
-                        Triple(
-                            first = {},
-                            second = Icons.Rounded.Edit,
-                            third = "Edit"
-                        ),
-                        Triple(
-                            first = { },
-                            second = Icons.Rounded.Delete,
-                            third = "Delete"
-                        )
-                    )
-                    CustomPopupMenu(
-                        content = { expand ->
-                            IconButton(
-                                onClick = expand,
-                                content = { Icon(Icons.Rounded.MoreVert, null) }
-                            )
-                        },
-                        items = items
+            state.conversationEntities.isEmpty() -> {
+                item(key = "isConversationEmpty") {
+                    Message(
+                        modifier = Modifier
+                            .animateItem(),
+                        message = "Empty Conversation"
                     )
                 }
-            )
+            }
+            else -> {
+                itemsIndexed(
+                    items = state.conversationEntities,
+                    key = { index, conversationEntity -> conversationEntity.id }
+                ) { index, conversationEntity ->
+                    CustomSegmentedListItem(
+                        modifier = Modifier
+                            .animateItem(),
+                        onClick = { navBackStack.add(NavigationRoute.ConversationScreen(conversationEntity.id)) },
+                        index = index,
+                        count = state.conversationEntities.size,
+                        content = { Text(text = conversationEntity.title) },
+                        trailingContent = {
+                            val items = listOf(
+                                Triple(
+                                    first = {},
+                                    second = Icons.Rounded.Edit,
+                                    third = "Edit"
+                                ),
+                                Triple(
+                                    first = { },
+                                    second = Icons.Rounded.Delete,
+                                    third = "Delete"
+                                )
+                            )
+                            CustomPopupMenu(
+                                content = { expand ->
+                                    IconButton(
+                                        onClick = expand,
+                                        content = { Icon(Icons.Rounded.MoreVert, null) }
+                                    )
+                                },
+                                items = items
+                            )
+                        }
+                    )
+                }
+            }
         }
     }
 }

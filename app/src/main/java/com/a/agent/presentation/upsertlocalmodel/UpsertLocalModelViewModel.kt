@@ -94,30 +94,17 @@ class UpsertLocalModelViewModel(
     private fun upsertModelButton() = viewModelScope.launch {
         _state.update { it.copy(isUpsertModelLoading = true) }
         val modelPlatformFile = _state.value.modelPlatformFile
-        val importModel = withContext(Dispatchers.IO) {
-            val targetFile = File(application.getExternalFilesDir(null), "model" + File.separator + modelPlatformFile!!.name)
-
-            val parentDir = targetFile.parentFile
-            if (parentDir != null && !parentDir.exists()) {
-                parentDir.mkdirs()
+        val modelEntity = when {
+            modelPlatformFile != null -> {
+                _state.value.model.copy(
+                    id = Uuid.random().toString(),
+                    path = importModel(modelPlatformFile),
+                    modelSource = ModelSource.Local,
+                    isDownloaded = true
+                )
             }
-
-            application.contentResolver.openInputStream(modelPlatformFile.toAndroidUri()).use { inputStream ->
-                targetFile.outputStream().use { outputStream ->
-                    inputStream?.copyTo(outputStream)
-                    outputStream.flush()
-                }
-            }
-            targetFile
+            else -> _state.value.model
         }
-        val modelEntity = _state.value.model.copy(
-            id = Uuid.random().toString(),
-            path = _state.value.model.path.ifBlank {
-                importModel.absolutePath
-            },
-            modelSource = ModelSource.Local,
-            isDownloaded = true
-        )
         llmModelManagerRepository.upsertModel(modelEntity).collect { either ->
             either.onRight {
                 _state.update { it.copy(isUpsertModelLoading = false) }
@@ -128,5 +115,21 @@ class UpsertLocalModelViewModel(
                 navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
             }
         }
+    }
+
+    private suspend fun importModel(platformFile: PlatformFile): String = withContext(Dispatchers.IO) {
+        val targetFile = File(application.getExternalFilesDir(null), "model" + File.separator + platformFile.name)
+        val parentDir = targetFile.parentFile
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs()
+        }
+
+        application.contentResolver.openInputStream(platformFile.toAndroidUri()).use { inputStream ->
+            targetFile.outputStream().use { outputStream ->
+                inputStream?.copyTo(outputStream)
+                outputStream.flush()
+            }
+        }
+        targetFile.absolutePath
     }
 }

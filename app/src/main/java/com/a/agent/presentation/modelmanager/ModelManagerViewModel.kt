@@ -5,7 +5,6 @@ package com.a.agent.presentation.modelmanager
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.a.agent.data.local.ModelEntity
 import com.a.agent.data.local.ModelSource
 import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.presentation.navigation.Event
@@ -77,7 +76,16 @@ class ModelManagerViewModel(
                 llmModelManagerRepository.getModelMetadata(
                     url = _state.value.model.url
                 ).onStart {
-                    _state.update { it.copy(model = ModelEntity.Empty, isMetadataLoading = true, isMetadataError = null) }
+                    _state.update {
+                        it.copy(
+                            model = it.model.copy(
+                                fileName = "",
+                                totalBytes = 0
+                            ),
+                            isMetadataLoading = true,
+                            isMetadataError = null
+                        )
+                    }
                 }.collect { either ->
                     either.onRight { modelMetadataDto ->
                         _state.update {
