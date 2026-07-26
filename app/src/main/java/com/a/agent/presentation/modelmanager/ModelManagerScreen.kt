@@ -6,17 +6,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.InsertDriveFile
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.TypeSpecimen
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -34,16 +41,17 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.a.agent.data.local.ModelSource
 import com.a.agent.presentation.navigation.popBackStack
-import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
-import com.a.agent.presentation.util.component.CustomShrinkLeftAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.Message
 import com.a.agent.presentation.util.component.MessageType
 import com.a.agent.presentation.util.component.SupportingText
+import com.a.agent.presentation.util.component.listTitle
 import com.a.agent.presentation.util.component.spacer
 import com.a.agent.presentation.util.toMegaByte
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -86,32 +94,49 @@ private fun Screen(
                 onAction = onAction
             )
         },
-        floatingActionButton = {
-            Row {
-                if (state.isOnEdit && state.model.modelSource != ModelSource.Default) {
-                    CustomFloatingActionButton(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        onClick = { onAction(ModelManagerAction.DeleteModel) },
-                        icon = Icons.Rounded.Delete
-                    )
-                }
-                val isReadyToSave = state.model.url.isNotBlank() &&
-                        state.model.name.isNotBlank() &&
-                        state.model.fileName.isNotBlank() &&
-                        state.model.totalBytes != 0L &&
-                        state.model.modelSource != ModelSource.Default &&
-                        state.isModelSupported
-                CustomShrinkLeftAnimatedVisibility(
-                    visible = isReadyToSave
+        bottomBar = {
+            if (state.model.modelSource != ModelSource.Default) {
+                BottomAppBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentPadding = PaddingValues(horizontal = 10.dp)
                 ) {
-                    CustomFloatingActionButton(
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (state.isOnEdit) {
+                        Button(
+                            modifier = Modifier
+                                .padding(end = 10.dp)
+                                .height(ButtonDefaults.MediumContainerHeight),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            ),
+                            onClick = { onAction(ModelManagerAction.DeleteModel) },
+                            content = { Icon(Icons.Rounded.Delete, null) }
+                        )
+                    }
+                    val isReadyToSave = when {
+                        state.model.modelSource == ModelSource.Local -> {
+                            state.model.name.isNotBlank() &&
+                            state.model.fileName.isNotBlank() &&
+                            state.model.totalBytes != 0L &&
+                            state.model.modelSource != ModelSource.Default &&
+                            state.isModelSupported
+                        }
+                        else -> {
+                            state.model.url.isNotBlank() &&
+                            state.model.name.isNotBlank() &&
+                            state.model.fileName.isNotBlank() &&
+                            state.model.totalBytes != 0L &&
+                            state.model.modelSource != ModelSource.Default &&
+                            state.isModelSupported
+                        }
+                    }
+                    Button(
                         modifier = Modifier
-                            .padding(start = 10.dp),
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                            .height(ButtonDefaults.MediumContainerHeight),
                         onClick = { onAction(ModelManagerAction.UpsertModel) },
-                        icon = Icons.Rounded.Save
+                        content = { Icon(Icons.Rounded.Save, null) },
+                        enabled = isReadyToSave
                     )
                 }
             }
@@ -133,18 +158,65 @@ private fun Content(
         contentPadding = PaddingValues(horizontal = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.5.dp)
     ) {
-        item(key = "urlTextField") {
-            CustomTextField(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                label = { Text(text = "Direct Download Link Url") },
-                value = state.model.url,
-                onValueChange = { onAction(ModelManagerAction.UrlTextField(it)) },
-                singleLine = true,
-                enabled = !state.isOnEdit
-            )
+        listTitle(
+            title = "Llm Source",
+            content = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FilterChip(
+                        selected = state.model.modelSource != ModelSource.Local,
+                        onClick = { onAction(ModelManagerAction.LlmSourceChip(ModelSource.Url)) },
+                        label = { Text(text = "Url") },
+                        enabled = !state.isOnEdit
+                    )
+                    FilterChip(
+                        selected = state.model.modelSource == ModelSource.Local,
+                        onClick = { onAction(ModelManagerAction.LlmSourceChip(ModelSource.Local)) },
+                        label = { Text(text = "Local") },
+                        enabled = !state.isOnEdit
+                    )
+                }
+            }
+        )
+        when {
+            state.model.modelSource == ModelSource.Local -> {
+                item(key = "localFilePicker") {
+                    val filePicker = rememberFilePickerLauncher(
+                        type = FileKitType.File(),
+                        onResult = { platformFile ->
+                            if (platformFile != null) {
+                                onAction(ModelManagerAction.LocalFilePicker(platformFile))
+                            }
+                        }
+                    )
+                    CustomSegmentedListItem(
+                        modifier = Modifier
+                            .height(56.dp)
+                            .animateItem(),
+                        onClick = { if (!state.isOnEdit) filePicker.launch() },
+                        content = { Text(text = "Attach File") },
+                        trailingContent = { Icon(Icons.Rounded.AttachFile, null) }
+                    )
+                }
+            }
+            else -> {
+                item(key = "urlTextField") {
+                    CustomTextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem(),
+                        label = { Text(text = "Direct Download Link Url") },
+                        value = state.model.url,
+                        onValueChange = { onAction(ModelManagerAction.UrlTextField(it)) },
+                        singleLine = true,
+                        enabled = !state.isOnEdit
+                    )
+                }
+            }
         }
         spacer()
+        listTitle("Llm Metadata")
         when {
             state.isMetadataLoading -> {
                 item(key = "isMetadataLoading") {

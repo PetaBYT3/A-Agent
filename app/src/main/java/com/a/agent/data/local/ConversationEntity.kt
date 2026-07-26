@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
 @Entity(
     tableName = "conversationEntity"
 )
-class ConversationEntity(
+data class ConversationEntity(
     @PrimaryKey val id: String = Uuid.random().toString(),
     val title: String
 ) {

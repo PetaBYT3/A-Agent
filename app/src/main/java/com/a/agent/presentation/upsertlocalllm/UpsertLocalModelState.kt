@@ -1,4 +1,4 @@
-package com.a.agent.presentation.upsertlocalmodel
+package com.a.agent.presentation.upsertlocalllm
 
 import com.a.agent.data.local.ModelEntity
 import io.github.vinceglb.filekit.PlatformFile

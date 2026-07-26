@@ -1,4 +1,4 @@
-package com.a.agent.presentation.upsertlocalmodel
+package com.a.agent.presentation.upsertlocalllm
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

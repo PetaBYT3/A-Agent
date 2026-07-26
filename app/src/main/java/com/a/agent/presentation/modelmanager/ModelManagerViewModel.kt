@@ -5,19 +5,23 @@ package com.a.agent.presentation.modelmanager
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.a.agent.data.local.ModelSource
 import com.a.agent.domain.repository.LlmModelManagerRepository
 import com.a.agent.presentation.navigation.Event
 import com.a.agent.presentation.navigation.NavigationDisplayEvent
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.toAndroidUri
+import io.github.vinceglb.filekit.name
+import io.github.vinceglb.filekit.size
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.ExperimentalUuidApi
@@ -37,17 +41,19 @@ class ModelManagerViewModel(
     private fun initialize() {
         viewModelScope.launch {
             if (modelId.isNotBlank()) {
-                llmModelManagerRepository.getModel(modelId).first().onRight { modelEntity ->
-                    _state.update {
-                        it.copy(
-                            isOnEdit = true,
-                            model = modelEntity,
-                            isModelSupported = true,
-                            isModelLoading = false
-                        )
+                llmModelManagerRepository.getModel(modelId).collect { either ->
+                    either.onRight { modelEntity ->
+                        _state.update {
+                            it.copy(
+                                isOnEdit = true,
+                                model = modelEntity,
+                                isModelSupported = true,
+                                isModelLoading = false
+                            )
+                        }
+                    }.onLeft { error ->
+                        _state.update { it.copy(isModelError = error, isModelLoading = false) }
                     }
-                }.onLeft { error ->
-                    _state.update { it.copy(isModelError = error, isModelLoading = false) }
                 }
             }
         }
@@ -55,6 +61,10 @@ class ModelManagerViewModel(
 
     fun onAction(action: ModelManagerAction) {
         when (action) {
+            is ModelManagerAction.LlmSourceChip -> {
+                _state.update { it.copy(model = it.model.copy(fileName = "", path = "", totalBytes = 0, modelSource = action.llmSource)) }
+            }
+            is ModelManagerAction.LocalFilePicker -> localFilePicker(action.platformFile)
             is ModelManagerAction.UrlTextField -> urlTextField(action.url)
             is ModelManagerAction.NameTextField -> {
                 _state.update { it.copy(model = it.model.copy(name = action.name)) }
@@ -64,8 +74,34 @@ class ModelManagerViewModel(
         }
     }
 
-    private var searchJob: Job? = null
+    private fun localFilePicker(platformFile: PlatformFile) = viewModelScope.launch {
+        _state.update { it.copy(isMetadataLoading = true) }
 
+        val targetFile = File(application.getExternalFilesDir(null), "model" + File.separator + platformFile.name)
+        withContext(Dispatchers.IO) {
+            application.contentResolver.openInputStream(platformFile.toAndroidUri()).use { inputStream ->
+                targetFile.outputStream().use { outputStream ->
+                    inputStream?.copyTo(outputStream)
+                    outputStream.flush()
+                }
+            }
+        }
+
+        _state.update {
+            it.copy(
+                isMetadataLoading = false,
+                model = it.model.copy(
+                    fileName = platformFile.name,
+                    path = targetFile.absolutePath,
+                    totalBytes = platformFile.size(),
+                    isDownloaded = true
+                ),
+                isModelSupported = platformFile.name.endsWith(".litertlm", ignoreCase = true)
+            )
+        }
+    }
+
+    private var searchJob: Job? = null
     private fun urlTextField(url: String) {
         _state.update { it.copy(model = it.model.copy(url = url)) }
 
@@ -73,9 +109,7 @@ class ModelManagerViewModel(
         searchJob = viewModelScope.launch {
             delay(500.milliseconds)
             if (url.isNotBlank()) {
-                llmModelManagerRepository.getModelMetadata(
-                    url = _state.value.model.url
-                ).onStart {
+                llmModelManagerRepository.getModelMetadata(url).onStart {
                     _state.update {
                         it.copy(
                             model = it.model.copy(
@@ -88,10 +122,12 @@ class ModelManagerViewModel(
                     }
                 }.collect { either ->
                     either.onRight { modelMetadataDto ->
+                        val targetFile = File(application.getExternalFilesDir(null), "model" + File.separator + modelMetadataDto.fileName)
                         _state.update {
                             it.copy(
                                 model = it.model.copy(
                                     fileName = modelMetadataDto.fileName,
+                                    path = targetFile.absolutePath,
                                     totalBytes = modelMetadataDto.totalBytes,
                                 ),
                                 isModelSupported = modelMetadataDto.isSupported,
@@ -108,12 +144,7 @@ class ModelManagerViewModel(
 
     private fun upsertModel() = viewModelScope.launch {
         val modelEntity = _state.value.model.copy(
-            id = _state.value.model.id.ifBlank { Uuid.random().toString() },
-            path = _state.value.model.path.ifBlank {
-                File(application.getExternalFilesDir(null), "model" + File.separator + _state.value.model.fileName).absolutePath
-            },
-            modelSource = ModelSource.Url,
-            isDownloaded = false
+            id = _state.value.model.id.ifBlank { Uuid.random().toString() }
         )
         llmModelManagerRepository.upsertModel(modelEntity).collect { either ->
             either.onRight {

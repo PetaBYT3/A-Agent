@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.a.agent.data.local.ModelSource
 import com.a.agent.presentation.model.ModelAction
 import com.a.agent.presentation.model.ModelState
 import com.a.agent.presentation.navigation.NavigationRoute
@@ -65,12 +64,7 @@ fun AllModelPager(
             CustomSegmentedListItem(
                 modifier = Modifier
                     .animateItem(),
-                onClick = {
-                    when (modelEntity.modelSource) {
-                        ModelSource.Local -> navBackStack.add(NavigationRoute.UpsertLocalModelScreen(modelEntity.id))
-                        else -> navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id))
-                    }
-                },
+                onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id)) },
                 index = index,
                 count = state.allModels.size,
                 content = {

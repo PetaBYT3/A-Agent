@@ -6,35 +6,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.InsertDriveFile
-import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleFloatingActionButton
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -89,54 +80,6 @@ private fun Screen(
                 state = state,
                 onAction = onAction
             )
-        },
-        floatingActionButton = {
-            var isExpanded by rememberSaveable {
-                mutableStateOf(false)
-            }
-            FloatingActionButtonMenu(
-                modifier = Modifier
-                    .offset(x = 12.5.dp, y = 15.dp),
-                expanded = isExpanded,
-                button = {
-                    ToggleFloatingActionButton(
-                        checked = isExpanded,
-                        onCheckedChange = { isExpanded = !isExpanded },
-                        content = {
-                            Icon(
-                                tint = if (isExpanded) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    contentColorFor(FloatingActionButtonDefaults.containerColor)
-                                },
-                                imageVector = if (isExpanded) {
-                                    Icons.Rounded.Close
-                                } else {
-                                    Icons.Rounded.Add
-                                },
-                                contentDescription = null
-                            )
-                        }
-                    )
-                }
-            ) {
-                FloatingActionButtonMenuItem(
-                    onClick = {
-                        isExpanded = false
-                        navBackStack.add(NavigationRoute.ModelManagerScreen())
-                    },
-                    icon = { Icon(Icons.Rounded.Link, null) },
-                    text = { Text(text = "From Url") }
-                )
-                FloatingActionButtonMenuItem(
-                    onClick = {
-                        isExpanded = false
-                        navBackStack.add(NavigationRoute.UpsertLocalModelScreen())
-                    },
-                    icon = { Icon(Icons.Rounded.InsertDriveFile, null) },
-                    text = { Text(text = "From Device") }
-                )
-            }
         }
     )
 }
@@ -162,9 +105,27 @@ private fun Content(
                 pageCount = { ModelFilter.entries.size },
                 initialPage = 0
             )
+            Row(
+                modifier = Modifier
+                    .padding(start = 10.dp, end = 10.dp, bottom = 5.dp)
+                    .height(AssistChipDefaults.Height),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    modifier = Modifier
+                        .padding(horizontal = 5.dp),
+                    text = "Filter Llm",
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                AssistChip(
+                    onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen()) },
+                    label = { Text(text = "Add Llm") }
+                )
+            }
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp)
+                contentPadding = PaddingValues(horizontal = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 itemsIndexed(
                     items = ModelFilter.entries

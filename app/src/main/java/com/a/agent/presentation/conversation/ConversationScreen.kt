@@ -5,10 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +27,9 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -54,11 +60,9 @@ import com.a.agent.presentation.navigation.NavigationRoute
 import com.a.agent.presentation.navigation.popBackStack
 import com.a.agent.presentation.util.component.CustomFadeAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomFadeBox
-import com.a.agent.presentation.util.component.CustomFloatingActionButton
-import com.a.agent.presentation.util.component.CustomShrinkUpAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomSlideUpAnimatedVisibility
+import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
-import com.a.agent.presentation.util.component.CustomTransparentTextField
 import com.a.agent.presentation.util.component.Message
 import com.a.agent.presentation.util.component.MessageType
 import io.github.vinceglb.filekit.dialogs.FileKitType
@@ -119,80 +123,83 @@ private fun Screen(
         },
         bottomBar = {
             CustomSlideUpAnimatedVisibility(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surface)
+                    .navigationBarsPadding(),
                 visible = !state.isConversationInitializing && state.isEngineOnline == true,
             ) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .navigationBarsPadding(),
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(
+                    CustomTextField(
                         modifier = Modifier
-                            .padding(15.dp)
+                            .fillMaxWidth(),
+                        placeholder = { Text(text = "Prompt") },
+                        value = state.promptTextField,
+                        onValueChange = { onAction(ConversationAction.PromptTextField(it)) },
+                        maxLines = 3
+                    )
+                    Row(
+                        modifier = Modifier
+                            .height(IntrinsicSize.Min)
                     ) {
-                        CustomShrinkUpAnimatedVisibility(
-                            visible = state.imageInput != null
+                        Row(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            BadgedBox(
-                                modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                badge = {
-                                    Badge {
-                                        IconButton(
-                                            modifier = Modifier
-                                                .size(10.dp),
-                                            onClick = { onAction(ConversationAction.ImageInputPicker(null)) },
-                                            content = { Icon(Icons.Rounded.Close, null) }
-                                        )
+                            if (state.imageInput != null) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge {
+                                            IconButton(
+                                                modifier = Modifier
+                                                    .size(15.dp),
+                                                onClick = { onAction(ConversationAction.ImageInputPicker(null)) },
+                                                content = { Icon(Icons.Rounded.Close, null) }
+                                            )
+                                        }
                                     }
+                                ) {
+                                    AsyncImage(
+                                        modifier = Modifier
+                                            .clip(AbsoluteRoundedCornerShape(25))
+                                            .size(ButtonDefaults.MediumContainerHeight - 15.dp)
+                                            .clickable(
+                                                enabled = true,
+                                                onClick = { navBackStack.add(NavigationRoute.ImageViewScreen(state.imageInput)) }
+                                            ),
+                                        model = state.imageInput,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.FillWidth
+                                    )
                                 }
-                            ) {
-                                AsyncImage(
-                                    modifier = Modifier
-                                        .size(50.dp)
-                                        .clip(AbsoluteRoundedCornerShape(15.dp))
-                                        .clickable(
-                                            enabled = true,
-                                            onClick = { navBackStack.add(NavigationRoute.ImageViewScreen(state.imageInput!!)) }
-                                        ),
-                                    model = state.imageInput,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop
-                                )
                             }
                         }
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            CustomTransparentTextField(
-                                modifier = Modifier
-                                    .weight(1f),
-                                placeholder = { Text(text = "Prompt") },
-                                value = state.promptTextField,
-                                onValueChange = { onAction(ConversationAction.PromptTextField(it)) },
-                                maxLines = 3
-                            )
-                            val galleryPicker = rememberFilePickerLauncher(
-                                type = FileKitType.Image,
-                                onResult = { platformFile ->
-                                    if (platformFile != null) {
-                                        onAction(ConversationAction.ImageInputPicker(platformFile))
-                                    }
+                        val galleryPicker = rememberFilePickerLauncher(
+                            type = FileKitType.Image,
+                            onResult = { platformFile ->
+                                if (platformFile != null) {
+                                    onAction(ConversationAction.ImageInputPicker(platformFile))
                                 }
-                            )
-                            CustomFloatingActionButton(
-                                onClick = { galleryPicker.launch() },
-                                icon = Icons.Rounded.Image
-                            )
-                            CustomFloatingActionButton(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                onClick = { onAction(ConversationAction.GenerateButton) },
-                                icon = Icons.Rounded.Send
-                            )
-                        }
+                            }
+                        )
+                        FilledTonalButton(
+                            modifier = Modifier
+                                .padding(end = 10.dp)
+                                .height(ButtonDefaults.MediumContainerHeight),
+                            onClick = { galleryPicker.launch() },
+                            content = { Icon(Icons.Rounded.Image, null) }
+                        )
+                        Button(
+                            modifier = Modifier
+                                .height(ButtonDefaults.MediumContainerHeight),
+                            onClick = { onAction(ConversationAction.GenerateButton) },
+                            content = { Icon(Icons.Rounded.Send, null) }
+                        )
                     }
                 }
             }
@@ -217,7 +224,7 @@ private fun Content(
             modifier = Modifier
                 .fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 15.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp),
             verticalArrangement = Arrangement.spacedBy(15.dp)
         ) {
             if (state.isEngineOnline == false) {

@@ -63,7 +63,7 @@ fun LocalModelPager(
             CustomSegmentedListItem(
                 modifier = Modifier
                     .animateItem(),
-                onClick = { navBackStack.add(NavigationRoute.UpsertLocalModelScreen(modelEntity.id)) },
+                onClick = { navBackStack.add(NavigationRoute.ModelManagerScreen(modelEntity.id)) },
                 index = index,
                 count = state.localModels.size,
                 content = {

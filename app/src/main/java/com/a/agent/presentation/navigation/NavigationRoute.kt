@@ -15,6 +15,12 @@ sealed interface NavigationRoute: NavKey {
     data object WorkflowManagerScreen: NavigationRoute, NavKey
 
     @Serializable
+    data class ConversationScreen(val conversationId: String): NavigationRoute, NavKey
+
+    @Serializable
+    data class ConversationManagerScreen(val conversationId: String = ""): NavigationRoute, NavKey
+
+    @Serializable
     data object ModelScreen: NavigationRoute, NavKey
 
     @Serializable
@@ -22,9 +28,6 @@ sealed interface NavigationRoute: NavKey {
 
     @Serializable
     data class UpsertLocalModelScreen(val modelId: String = ""): NavigationRoute, NavKey
-
-    @Serializable
-    data class ConversationScreen(val conversationId: String): NavigationRoute, NavKey
 
     @Serializable
     data class ImageViewScreen(val imagePath: String): NavigationRoute, NavKey

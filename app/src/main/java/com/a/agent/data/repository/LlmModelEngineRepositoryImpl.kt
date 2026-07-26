@@ -3,7 +3,6 @@
 package com.a.agent.data.repository
 
 import android.app.Application
-import android.os.Process
 import androidx.room.withTransaction
 import arrow.core.Either
 import com.a.agent.data.local.AgentDataStore
@@ -60,9 +59,7 @@ class LlmModelEngineRepositoryImpl(
 
     override suspend fun initializeEngine(modelPath: File): Flow<Either<String, Unit>> = flow {
         try {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
             val llmModelEngineConfiguration = agentDataStore.llmModelEngineConfiguration.first()
-
             val engineConfig = EngineConfig(
                 modelPath = modelPath.absolutePath,
                 backend = getBackend(llmModelEngineConfiguration.processingBackend),
@@ -70,6 +67,11 @@ class LlmModelEngineRepositoryImpl(
             )
             engine = Engine(engineConfig)
             engine?.initialize()
+
+            val conversationConfig = ConversationConfig(
+                initialMessages = emptyList()
+            )
+            conversation = engine?.createConversation(conversationConfig)
             _isLlmModelEngineOnline.update { true }
 
             emit(Either.Right(Unit))

@@ -25,11 +25,12 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.a.agent.presentation.conversation.TextToTextScreen
+import com.a.agent.presentation.conversationmanager.ConversationManagerScreen
 import com.a.agent.presentation.home.HomeScreen
 import com.a.agent.presentation.imageview.ImageViewScreen
 import com.a.agent.presentation.model.ModelScreen
 import com.a.agent.presentation.modelmanager.ModelManagerScreen
-import com.a.agent.presentation.upsertlocalmodel.UpsertLocalModelScreen
+import com.a.agent.presentation.upsertlocalllm.UpsertLocalModelScreen
 import com.a.agent.presentation.workflow.WorkFlowScreen
 import com.a.agent.presentation.workflowmanagerscreen.WorkflowManagerScreen
 import org.koin.compose.koinInject
@@ -71,101 +72,100 @@ fun NavigationDisplay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .imePadding(),
-        content = {
-            val transitionDuration = 300
-            NavDisplay(
-                modifier = Modifier
-                    .fillMaxSize(),
-                entryDecorators = listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator()
-                ),
-                transitionSpec = {
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
-                    ) togetherWith slideOutHorizontally(
-                        targetOffsetX = { -it / 3 },
-                        animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
-                    )
-                },
-                popTransitionSpec = {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 3 },
-                        animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
-                    ) togetherWith slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
-                    )
-                },
-                predictivePopTransitionSpec = {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 3 },
-                        animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
-                    ) togetherWith slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
-                    )
-                },
-                backStack = navBackStack
-            ) { navKey ->
-                when (navKey as NavigationRoute) {
-                    NavigationRoute.HomeScreen -> NavEntry(
-                        key = navKey,
-                        content = { HomeScreen(navBackStack) }
-                    )
-                    NavigationRoute.WorkflowScreen -> NavEntry(
-                        key = navKey,
-                        content = { WorkFlowScreen(navBackStack) }
-                    )
-                    NavigationRoute.WorkflowManagerScreen -> NavEntry(
-                        key = navKey,
-                        content = { WorkflowManagerScreen(navBackStack) }
-                    )
-                    NavigationRoute.ModelScreen -> NavEntry(
-                        key = navKey,
-                        content = { ModelScreen(navBackStack) }
-                    )
-                    is NavigationRoute.ModelManagerScreen -> NavEntry(
-                        key = navKey,
-                        content = {
-                            val route = navKey as NavigationRoute.ModelManagerScreen
-                            ModelManagerScreen(navBackStack, route.modelId)
-                        }
-                    )
-                    is NavigationRoute.UpsertLocalModelScreen -> NavEntry(
-                        key = navKey,
-                        content = {
-                            val route = navKey as NavigationRoute.UpsertLocalModelScreen
-                            UpsertLocalModelScreen(navBackStack, route.modelId)
-                        }
-                    )
-                    is NavigationRoute.ConversationScreen -> NavEntry(
-                        key = navKey,
-                        content = {
-                            val route = navKey as NavigationRoute.ConversationScreen
-                            TextToTextScreen(navBackStack, route.conversationId)
-                        }
-                    )
-                    is NavigationRoute.ImageViewScreen -> NavEntry(
-                        key = navKey,
-                        content = {
-                            val route = navKey as NavigationRoute.ImageViewScreen
-                            ImageViewScreen(navBackStack, route.imagePath)
-                        }
-                    )
+            .imePadding()
+    ) {
+        val transitionDuration = 300
+        NavDisplay(
+            modifier = Modifier
+                .fillMaxSize(),
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator()
+            ),
+            transitionSpec = {
+                slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
+                ) togetherWith slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
+                )
+            },
+            popTransitionSpec = {
+                slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
+                ) togetherWith slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
+                )
+            },
+            predictivePopTransitionSpec = {
+                slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
+                ) togetherWith slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(transitionDuration, easing = FastOutSlowInEasing)
+                )
+            },
+            backStack = navBackStack
+        ) { navKey ->
+            when (navKey) {
+                NavigationRoute.HomeScreen -> {
+                    NavEntry(navKey) {
+                        HomeScreen(navBackStack)
+                    }
                 }
+                NavigationRoute.WorkflowScreen -> NavEntry(
+                    key = navKey,
+                    content = { WorkFlowScreen(navBackStack) }
+                )
+                NavigationRoute.WorkflowManagerScreen -> NavEntry(
+                    key = navKey,
+                    content = { WorkflowManagerScreen(navBackStack) }
+                )
+                is NavigationRoute.ConversationScreen -> {
+                    NavEntry(navKey) {
+                        TextToTextScreen(navBackStack, navKey.conversationId)
+                    }
+                }
+                is NavigationRoute.ConversationManagerScreen -> {
+                    NavEntry(navKey) {
+                        ConversationManagerScreen(navBackStack, navKey.conversationId)
+                    }
+                }
+                is NavigationRoute.ModelScreen -> {
+                    NavEntry(navKey) {
+                        ModelScreen(navBackStack)
+                    }
+                }
+                is NavigationRoute.ModelManagerScreen -> {
+                    NavEntry(navKey) {
+                        ModelManagerScreen(navBackStack, navKey.modelId)
+                    }
+                }
+                is NavigationRoute.UpsertLocalModelScreen -> {
+                    NavEntry(navKey) {
+                        UpsertLocalModelScreen(navBackStack, navKey.modelId)
+                    }
+                }
+                is NavigationRoute.ImageViewScreen -> {
+                    NavEntry(navKey) {
+                        ImageViewScreen(navBackStack, navKey.imagePath)
+                    }
+                }
+                else -> error("Unknown Nav Key: $navKey")
             }
-            SnackbarHost(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .imePadding()
-                    .padding(bottom = 50.dp),
-                hostState = snackBarHostState,
-            )
         }
-    )
+        SnackbarHost(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .imePadding()
+                .padding(bottom = 50.dp),
+            hostState = snackBarHostState,
+        )
+    }
 }
 
 fun NavBackStack<NavKey>.popBackStack() {

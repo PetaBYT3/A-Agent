@@ -3,7 +3,6 @@
 package com.a.agent.presentation.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,14 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -33,12 +27,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -55,10 +50,7 @@ import com.a.agent.domain.model.LlmModelEngineConfiguration
 import com.a.agent.presentation.navigation.NavigationRoute
 import com.a.agent.presentation.util.component.CustomComposableBottomSheet
 import com.a.agent.presentation.util.component.CustomEmptyBottomSheet
-import com.a.agent.presentation.util.component.CustomFloatingActionButton
-import com.a.agent.presentation.util.component.CustomPopupMenu
 import com.a.agent.presentation.util.component.CustomSegmentedListItem
-import com.a.agent.presentation.util.component.CustomShrinkLeftAnimatedVisibility
 import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.CustomUndismissableBottomSheet
@@ -111,34 +103,6 @@ private fun Screen(
                 state = state,
                 onAction = onAction
             )
-        },
-        floatingActionButton = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CustomShrinkLeftAnimatedVisibility(
-                    visible = state.selectedModelEntity != ModelEntity.Empty
-                ) {
-                    CustomFloatingActionButton(
-                        containerColor = if (state.isModelEngineOnline) {
-                            MaterialTheme.colorScheme.errorContainer
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
-                        contentColor = if (state.isModelEngineOnline) {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        } else {
-                            MaterialTheme.colorScheme.onPrimary
-                        },
-                        onClick = { onAction(HomeAction.ToggleModelEngine) },
-                        icon = if (state.isModelEngineOnline) Icons.Rounded.Stop else Icons.Rounded.PlayArrow
-                    )
-                }
-                CustomFloatingActionButton(
-                    onClick = { onAction(HomeAction.UpsertConversationBottomSheet) },
-                    icon = Icons.Rounded.Add
-                )
-            }
         }
     )
 
@@ -347,11 +311,11 @@ private fun Content(
                             .animateItem(),
                         colors = ListItemDefaults.colors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            overlineContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         ),
                         overline = {
                             Text(
-                                color = if (state.isModelEngineOnline) Color.Green else Color.Red,
                                 text = if (state.isModelEngineOnline) "Online" else "Offline"
                             )
                         },
@@ -359,7 +323,14 @@ private fun Content(
                             Text(
                                 text = state.selectedModelEntity.name,
                                 style = MaterialTheme.typography.displaySmall,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = state.isModelEngineOnline,
+                                onCheckedChange = { onAction(HomeAction.ToggleModelEngine) }
                             )
                         }
                     )
@@ -367,11 +338,11 @@ private fun Content(
             }
         }
         item(key = "changeAndConfigurationButton") {
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .animateItem(),
-                contentAlignment = Alignment.CenterEnd
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)
             ) {
                 SplitButtonLayout(
                     leadingButton = {
@@ -392,7 +363,15 @@ private fun Content(
             }
         }
         spacer()
-        listTitle("Conversation")
+        listTitle(
+            title = "Conversation",
+            content = {
+                AssistChip(
+                    onClick = { navBackStack.add(NavigationRoute.ConversationManagerScreen()) },
+                    label = { Text(text = "Create New") }
+                )
+            }
+        )
         when {
             state.isConversationsLoading -> {
                 item(key = "isConversationLoading") {
@@ -435,26 +414,9 @@ private fun Content(
                         count = state.conversationEntities.size,
                         content = { Text(text = conversationEntity.title) },
                         trailingContent = {
-                            val items = listOf(
-                                Triple(
-                                    first = {},
-                                    second = Icons.Rounded.Edit,
-                                    third = "Edit"
-                                ),
-                                Triple(
-                                    first = { },
-                                    second = Icons.Rounded.Delete,
-                                    third = "Delete"
-                                )
-                            )
-                            CustomPopupMenu(
-                                content = { expand ->
-                                    IconButton(
-                                        onClick = expand,
-                                        content = { Icon(Icons.Rounded.MoreVert, null) }
-                                    )
-                                },
-                                items = items
+                            IconButton(
+                                onClick = { navBackStack.add(NavigationRoute.ConversationManagerScreen(conversationEntity.id)) },
+                                content = { Icon(Icons.Rounded.MoreVert, null) }
                             )
                         }
                     )

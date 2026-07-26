@@ -87,19 +87,20 @@ fun LazyListScope.listTitle(
     item {
         Row(
             modifier = Modifier
+                .padding(bottom = 5.dp)
                 .fillMaxWidth()
                 .height(AssistChipDefaults.Height),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HeadlineText(
+            Text(
                 modifier = Modifier
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                text = title
+                    .padding(horizontal = 5.dp),
+                text = title,
+                style = MaterialTheme.typography.labelLarge
             )
             Spacer(modifier = Modifier.weight(1f))
             if (content != null) content()
         }
-        Spacer(modifier = Modifier.height(5.dp))
     }
 }
 

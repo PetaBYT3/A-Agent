@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-val ModelPagerModifier = Modifier.fillMaxSize().padding(top = 10.dp)
+val ModelPagerModifier = Modifier.fillMaxSize()
 val ModelLazyColumnPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 100.dp)
 
 @SuppressLint("ModifierFactoryExtensionFunction")
