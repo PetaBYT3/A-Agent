@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.plugin.serialization)
+    alias(libs.plugins.secrets.gradle.plugin)
     //alias(libs.plugins.google.services)
 }
 
@@ -20,6 +21,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    packaging {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/LICENSE"
+            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/license.txt"
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+            excludes += "META-INF/notice.txt"
+        }
+    }
+
     buildTypes {
         release {
             optimization {
@@ -34,6 +47,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -102,6 +116,14 @@ dependencies {
     //Reorderable
     implementation(libs.reorderable)
 
+    //Google API
+    implementation(libs.google.play.service.auth)
+    implementation(libs.google.api.client)
+    implementation(libs.google.api.service.drive)
+    implementation(libs.credential)
+    implementation(libs.credential.play.service.auth)
+    implementation(libs.google.id)
+
     //Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
@@ -116,10 +138,6 @@ dependencies {
     implementation(libs.camerax.two)
     implementation(libs.camerax.view)
     implementation(libs.camerax.lifecycle)
-
-    //Tasks Gen AI
-    implementation(libs.mediapipe.tasks.genai)
-    implementation(libs.mediapipe.tasks.vision)
 
     //LiteRT LM
     implementation(libs.litert.genai)

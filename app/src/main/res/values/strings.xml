@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">A Agent</string>
+
+    <string name="backup_export">
+        Backup all of your data into importable backup file
+    </string>
+
+    <string name="backup_import">
+        Restore all of your data from exported backup file
+    </string>
+
+    <string name="contact_email">
+        andreahussanini.2103@gmail.com
+    </string>
+
+    <string name="contact_linkedin">
+        https://www.linkedin.com/in/andrea-hussanini-274223218/
+    </string>
 </resources>

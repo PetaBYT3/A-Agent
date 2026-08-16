@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -88,13 +87,11 @@ fun LazyListScope.listTitle(
         Row(
             modifier = Modifier
                 .padding(bottom = 5.dp)
-                .fillMaxWidth()
-                .height(AssistChipDefaults.Height),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                modifier = Modifier
-                    .padding(horizontal = 5.dp),
+                modifier = Modifier,
                 text = title,
                 style = MaterialTheme.typography.labelLarge
             )
@@ -161,6 +158,7 @@ fun LazyListScope.message(message: String, messageType: MessageType = MessageTyp
 @Composable
 fun Message(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     index: Int = 0,
     count: Int = 1,
     message: String,
@@ -177,7 +175,9 @@ fun Message(
         MessageType.Error -> MaterialTheme.colorScheme.onErrorContainer
     }
     CustomSegmentedListItem(
-        modifier = modifier,
+        modifier = modifier
+            .height(50.dp),
+        onClick = onClick,
         colors = ListItemDefaults.colors(
             containerColor = containerColor,
             leadingContentColor = contentColor,
@@ -240,6 +240,6 @@ fun LazyListScope.itemRow(
     }
 }
 
-fun LazyListScope.spacer(dp: Dp = 5.dp) {
+fun LazyListScope.spacer(dp: Dp = 10.dp) {
     item { Spacer(modifier = Modifier.height(dp)) }
 }

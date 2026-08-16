@@ -1,29 +1,30 @@
 package com.a.agent.presentation.home
 
-import com.a.agent.data.local.ConversationEntity
-import com.a.agent.data.local.ModelEntity
-import com.a.agent.domain.model.LlmModelEngineConfiguration
+import com.a.agent.data.local.conversation.ConversationDetailEntity
+import com.a.agent.data.local.llm.LlmEntity
+import com.a.agent.domain.model.Configuration
 
 data class HomeState(
-    val totalDownloadingProgress: Int = 0,
+    val isNotificationPermissionGranted: Boolean = true,
+    val isStoragePermissionGranted: Boolean = true,
+    val isMicrophonePermissionGranted: Boolean = true,
 
-    val isLlmModelEngineConfigurationLoading: Boolean = false,
-    val isLlmModelEngineConfigurationError: String? = null,
-    val llmModelEngineConfigurationBottomSheet: Boolean = false,
-    val llmModelEngineConfiguration: LlmModelEngineConfiguration = LlmModelEngineConfiguration.Empty,
-    val selectedModelEntity: ModelEntity = ModelEntity.Empty,
+    val isEngineOnline: Boolean = false,
+    val engineTitle: String = "",
+    val engineStatus: String = "",
+    val isEngineLoading: Boolean = false,
 
-    val downloadedModelBottomSheet: Boolean = false,
-    val downloadedModels: List<ModelEntity> = emptyList(),
-    val downloadedModelError: String? = null,
+    val isConfigurationLoading: Boolean = true,
+    val isConfigurationError: String? = null,
+    val isConfigurationBottomSheetVisible: Boolean = false,
+    val configuration: Configuration = Configuration.Empty,
+    val selectedLlm: LlmEntity? = null,
 
-    val isModelEngineOnline: Boolean = false,
-    val isModelEngineLoading: Boolean = false,
+    val isDownloadedLlmBottomSheetVisible: Boolean = false,
+    val isDownloadedLlmError: String? = null,
+    val downloadedLlm: List<LlmEntity> = emptyList(),
 
-    val isConversationsLoading: Boolean = false,
-    val conversationEntities: List<ConversationEntity> = emptyList(),
-    val conversationError: String? = null,
-
-    val upsertConversationBottomSheet: Boolean = false,
-    val conversationNameTextField: String = ""
+    val isConversationsLoading: Boolean = true,
+    val isConversationsError: String? = null,
+    val conversationDetails: List<ConversationDetailEntity> = emptyList(),
 )

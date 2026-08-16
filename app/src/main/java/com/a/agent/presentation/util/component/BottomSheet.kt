@@ -5,15 +5,18 @@ package com.a.agent.presentation.util.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.SheetValue
@@ -33,6 +36,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CustomUndismissableBottomSheet(
     isBottomSheetVisible: Boolean,
+    title: String,
     content: LazyListScope.() -> Unit,
 ) {
     var isVisibleInternally by remember { mutableStateOf(isBottomSheetVisible) }
@@ -60,18 +64,31 @@ fun CustomUndismissableBottomSheet(
 
     if (isVisibleInternally) {
         ModalBottomSheet(
+            modifier = Modifier
+                .statusBarsPadding(),
             sheetState = sheetState,
             properties = ModalBottomSheetDefaults.properties(
                 shouldDismissOnBackPress = false
             ),
             onDismissRequest = {}
         ) {
-            LazyColumn(
-                modifier = Modifier,
-                verticalArrangement = Arrangement.spacedBy(2.5.dp),
-                contentPadding = PaddingValues(15.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
             ) {
-                content()
+                TitleText(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    text = title,
+                    isSingleLine = true
+                )
+                LazyColumn(
+                    modifier = Modifier,
+                    verticalArrangement = Arrangement.spacedBy(2.5.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 20.dp)
+                ) {
+                    content()
+                }
             }
         }
     }
@@ -80,6 +97,7 @@ fun CustomUndismissableBottomSheet(
 @Composable
 fun CustomEmptyBottomSheet(
     isBottomSheetVisible: Boolean,
+    title: String,
     content: LazyListScope.() -> Unit,
     onCancel: () -> Unit
 ) {
@@ -88,42 +106,8 @@ fun CustomEmptyBottomSheet(
 
     if (isBottomSheetVisible) {
         ModalBottomSheet(
-            sheetState = sheetState,
-            onDismissRequest = {
-                scope.launch {
-                    sheetState.hide()
-                }.invokeOnCompletion {
-                    if (!sheetState.isVisible) {
-                        onCancel()
-                    }
-                }
-            }
-        ) {
-            LazyColumn(
-                modifier = Modifier,
-                verticalArrangement = Arrangement.spacedBy(2.5.dp),
-                contentPadding = PaddingValues(15.dp)
-            ) {
-                content()
-            }
-        }
-    }
-}
-
-@Composable
-fun CustomComposableBottomSheet(
-    isBottomSheetVisible: Boolean,
-    content: LazyListScope.() -> Unit,
-    additionalContent: @Composable () -> Unit = {},
-    confirmText: String,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit
-) {
-    val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    if (isBottomSheetVisible) {
-        ModalBottomSheet(
+            modifier = Modifier
+                .statusBarsPadding(),
             sheetState = sheetState,
             onDismissRequest = {
                 scope.launch {
@@ -136,23 +120,90 @@ fun CustomComposableBottomSheet(
             }
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 15.dp, bottom = 15.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
             ) {
+                TitleText(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    text = title,
+                    isSingleLine = true
+                )
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f, false),
+                    modifier = Modifier,
                     verticalArrangement = Arrangement.spacedBy(2.5.dp),
-                    contentPadding = PaddingValues(start = 15.dp, end = 15.dp)
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 20.dp)
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomContentBottomSheet(
+    isBottomSheetVisible: Boolean,
+    title: String,
+    content: LazyListScope.() -> Unit,
+    isOnError: Boolean = false,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (isBottomSheetVisible) {
+        ModalBottomSheet(
+            modifier = Modifier
+                .statusBarsPadding(),
+            sheetState = sheetState,
+            onDismissRequest = {
+                scope.launch {
+                    sheetState.hide()
+                }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        onCancel()
+                    }
+                }
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                TitleText(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    text = title,
+                    isSingleLine = true
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, false),
+                    verticalArrangement = Arrangement.spacedBy(2.5.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
                     content(this)
                 }
                 Spacer(modifier = Modifier.height(15.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    additionalContent()
                     Button(
-                        modifier = Modifier.fillMaxWidth(),
+                        colors = if (isOnError) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors()
+                        },
                         onClick = {
                             scope.launch {
                                 sheetState.hide()
@@ -165,64 +216,6 @@ fun CustomComposableBottomSheet(
                         },
                         content = { Text(text = confirmText) }
                     )
-                }
-            }
-        }
-    }
-}
-
-data class SegmentedItemData(
-    val onClick: () -> Unit,
-    val leadingContent: (@Composable () -> Unit)? = null,
-    val content: @Composable () -> Unit,
-    val supportingContent: (@Composable () -> Unit)? = null,
-    val trailingContent: (@Composable () -> Unit)? = null
-)
-
-@Composable
-fun <T> SelectItemBottomSheet(
-    isBottomSheetVisible: Boolean,
-    itemList: List<T>,
-    additionalContent: (@Composable () -> Unit)? = null,
-    itemContent: @Composable (onDismiss: () -> Unit, index: Int, item: T) -> Unit,
-    onCancel: () -> Unit
-) {
-    val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    val closeSheet: () -> Unit = {
-        scope.launch {
-            sheetState.hide()
-        }.invokeOnCompletion {
-            if (!sheetState.isVisible) {
-                onCancel()
-            }
-        }
-    }
-
-    if (isBottomSheetVisible) {
-        ModalBottomSheet(
-            sheetState = sheetState,
-            onDismissRequest = {
-                scope.launch {
-                    sheetState.hide()
-                }.invokeOnCompletion {
-                    if (!sheetState.isVisible) {
-                        onCancel()
-                    }
-                }
-            }
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f, false),
-                verticalArrangement = Arrangement.spacedBy(2.5.dp),
-                contentPadding = PaddingValues(start = 15.dp, end = 15.dp, top = 15.dp, bottom = 15.dp)
-            ) {
-                if (additionalContent != null) {
-                    item { additionalContent() }
-                }
-                itemsIndexed(itemList) { index, item ->
-                    itemContent(closeSheet, index, item)
                 }
             }
         }

@@ -2,186 +2,163 @@ package com.a.agent.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.a.agent.data.local.ConversationEntity
-import com.a.agent.data.local.ModelEntity
-import com.a.agent.domain.model.LlmModelEngineBackend
-import com.a.agent.domain.repository.LlmModelEngineRepository
-import com.a.agent.domain.repository.LlmModelManagerRepository
-import com.a.agent.presentation.navigation.Event
-import com.a.agent.presentation.navigation.NavigationDisplayEvent
+import com.a.agent.data.local.llm.LlmEntity
+import com.a.agent.domain.model.LlmBackend
+import com.a.agent.domain.model.ProcessStatus
+import com.a.agent.domain.repository.ConversationRepository
+import com.a.agent.domain.repository.EngineRepository
+import com.a.agent.domain.repository.LlmRepository
+import com.a.agent.domain.repository.PermissionRepository
+import com.a.agent.presentation.navigation.Effect
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 class HomeViewModel(
-    private val llmModelManagerRepository: LlmModelManagerRepository,
-    private val llmModelEngineRepository: LlmModelEngineRepository,
-    private val navigationDisplayEvent: NavigationDisplayEvent
+    private val permissionRepository: PermissionRepository,
+    private val engineRepository: EngineRepository,
+    private val llmRepository: LlmRepository,
+    private val conversationRepository: ConversationRepository
 ): ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state = _state.onStart {
         initialize()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
+    private val _effect = Channel<Effect>(Channel.CONFLATED)
+    val effect = _effect.receiveAsFlow()
+
     private fun initialize() {
-        viewModelScope.launch {
-            llmModelManagerRepository.activeDownloadInfo.collect { map ->
-                _state.update { it.copy(totalDownloadingProgress = map.size) }
-            }
-        }
+        permissionRepository.isNotificationPermissionGranted.onEach { isNotificationPermissionGranted ->
+            _state.update { it.copy(isNotificationPermissionGranted = isNotificationPermissionGranted) }
+        }.launchIn(viewModelScope)
 
-        viewModelScope.launch {
-            llmModelManagerRepository.getLlmModelEngineConfiguration().onStart {
-                _state.update { it.copy(isLlmModelEngineConfigurationLoading = true) }
-            }.collectLatest { either ->
-                either.onRight { pair ->
-                    _state.update {
-                        it.copy(
-                            llmModelEngineConfiguration = pair.first,
-                            selectedModelEntity = pair.second,
-                            isLlmModelEngineConfigurationLoading = false
-                        )
-                    }
-                }.onLeft { error ->
-                    _state.update { it.copy(isLlmModelEngineConfigurationError = error, isLlmModelEngineConfigurationLoading = false) }
-                }
-            }
-        }
+        permissionRepository.isStoragePermissionGranted.onEach { isStoragePermissionGranted ->
+            _state.update { it.copy(isStoragePermissionGranted = isStoragePermissionGranted) }
+        }.launchIn(viewModelScope)
 
-        viewModelScope.launch {
-            llmModelManagerRepository.getModels().collect { either ->
-                either.onRight { modelEntities ->
-                    val downloadedModels = modelEntities.filter { it.isDownloaded }
-                    _state.update { it.copy(downloadedModels = downloadedModels) }
-                }.onLeft { error ->
-                    _state.update { it.copy(downloadedModelError = error) }
-                }
-            }
-        }
+        permissionRepository.isMicrophonePermissionGranted.onEach { isMicrophonePermissionGranted ->
+            _state.update { it.copy(isMicrophonePermissionGranted = isMicrophonePermissionGranted) }
+        }.launchIn(viewModelScope)
 
-        viewModelScope.launch {
-            llmModelEngineRepository.isLlmModelEngineOnline.collect { isModelEngineOnline ->
-                _state.update { it.copy(isModelEngineOnline = isModelEngineOnline) }
-            }
-        }
+        engineRepository.isEngineOnline.onEach { bool ->
+            _state.update { it.copy(isEngineOnline = bool) }
+        }.launchIn(viewModelScope)
 
-        viewModelScope.launch {
-            llmModelEngineRepository.getConversations().onStart {
-                _state.update { it.copy(isConversationsLoading = true) }
-            }.collect { either ->
-                either.onRight { conversationEntities ->
-                    _state.update { it.copy(conversationEntities = conversationEntities, isConversationsLoading = false) }
-                }.onLeft { error ->
-                    _state.update { it.copy(conversationError = error, isConversationsLoading = false) }
-                }
+        engineRepository.getConfiguration().onEach { either ->
+            either.onRight { pair ->
+                _state.update { it.copy(configuration = pair.first, selectedLlm = pair.second, isConfigurationLoading = false) }
+            }.onLeft { error ->
+                _state.update { it.copy(isConfigurationError = error, isConfigurationLoading = false) }
             }
-        }
+        }.launchIn(viewModelScope)
+
+        llmRepository.getLlms().onEach { either ->
+            either.onRight { modelEntities ->
+                val downloadedLlm = modelEntities.filter { it.isDownloaded }
+                _state.update { it.copy(downloadedLlm = downloadedLlm) }
+            }.onLeft { error ->
+                _state.update { it.copy(isDownloadedLlmError = error) }
+            }
+        }.launchIn(viewModelScope)
+
+        conversationRepository.getConversationDetails().onEach { either ->
+            either.onRight { conversationEntities ->
+                _state.update { it.copy(conversationDetails = conversationEntities, isConversationsLoading = false) }
+            }.onLeft { error ->
+                _state.update { it.copy(isConversationsError = error, isConversationsLoading = false) }
+            }
+        }.launchIn(viewModelScope)
     }
 
     fun onAction(action: HomeAction) {
         when (action) {
-            HomeAction.DownloadedModelBottomSheet -> {
-                _state.update { it.copy(downloadedModelBottomSheet = !it.downloadedModelBottomSheet) }
+            HomeAction.UpdatePermission -> permissionRepository.updatePermission()
+            HomeAction.ToggleEngine -> toggleEngine()
+            HomeAction.DownloadedLlmBottomSheetVisibility -> {
+                _state.update { it.copy(isDownloadedLlmBottomSheetVisible = !it.isDownloadedLlmBottomSheetVisible) }
             }
-            is HomeAction.SelectModel -> selectModel(action.modelEntity)
-            HomeAction.UpsertConversationBottomSheet -> {
-                _state.update { it.copy(upsertConversationBottomSheet = !it.upsertConversationBottomSheet) }
-            }
-            HomeAction.LlmModelEngineConfigurationBottomSheet -> {
-                _state.update { it.copy(llmModelEngineConfigurationBottomSheet = !it.llmModelEngineConfigurationBottomSheet) }
+            is HomeAction.SelectModel -> selectModel(action.llm)
+            HomeAction.ConfigurationBottomSheetVisibility -> {
+                _state.update { it.copy(isConfigurationBottomSheetVisible = !it.isConfigurationBottomSheetVisible) }
             }
             is HomeAction.ProcessBackendChip -> processBackendChip(action.backend)
             is HomeAction.VisionBackendChip -> visionBackendChip(action.backend)
-            is HomeAction.MaxNumTokens -> maxNumTokensChip(action.tokens)
-            HomeAction.ToggleModelEngine -> toggleModelEngine()
-            is HomeAction.ConversationNameTextField -> {
-                _state.update { it.copy(conversationNameTextField = action.name) }
-            }
-            HomeAction.UpsertConversationButton -> upsertConversationButton()
         }
     }
 
-    private fun selectModel(modelEntity: ModelEntity) = viewModelScope.launch {
-        val llmModelEngineConfiguration = _state.value.llmModelEngineConfiguration.copy(
-            selectedModelId = modelEntity.id
-        )
-        llmModelManagerRepository.upsertLlmModelEngineConfiguration(llmModelEngineConfiguration).collect { either ->
-            either.onLeft { error ->
-                navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
-            }
-        }
-    }
-
-    private fun processBackendChip(backend: LlmModelEngineBackend) = viewModelScope.launch {
-        val llmModelEngineConfiguration = _state.value.llmModelEngineConfiguration.copy(
-            processingBackend = backend
-        )
-        llmModelManagerRepository.upsertLlmModelEngineConfiguration(llmModelEngineConfiguration).collect { either ->
-            either.onLeft { error ->
-                navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
-            }
-        }
-    }
-
-    private fun maxNumTokensChip(token: Int) = viewModelScope.launch {
-        val llmModelEngineConfiguration = _state.value.llmModelEngineConfiguration.copy(
-            maxNumTokens = token
-        )
-        llmModelManagerRepository.upsertLlmModelEngineConfiguration(llmModelEngineConfiguration).collect { either ->
-            either.onLeft { error ->
-                navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
-            }
-        }
-    }
-
-    private fun visionBackendChip(backend: LlmModelEngineBackend) = viewModelScope.launch {
-        val llmModelEngineConfiguration = _state.value.llmModelEngineConfiguration.copy(
-            visionBackend = backend
-        )
-        llmModelManagerRepository.upsertLlmModelEngineConfiguration(llmModelEngineConfiguration).collect { either ->
-            either.onLeft { error ->
-                navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
-            }
-        }
-    }
-
-    private fun toggleModelEngine() = viewModelScope.launch {
-        _state.update { it.copy(isModelEngineLoading = true) }
-        when (_state.value.isModelEngineOnline) {
+    private fun toggleEngine() {
+        _state.update { it.copy(isEngineLoading = true) }
+        when (_state.value.isEngineOnline) {
             true -> {
-                llmModelEngineRepository.uninitializeEngine().collect { either ->
-                    either.onRight {
-
-                    }
-                    _state.update { it.copy(isModelEngineLoading = false) }
+                viewModelScope.launch {
+                    _state.update { it.copy(engineTitle = "Shutting Down", engineStatus = "Clearing Memory...") }
+                    delay(2.seconds)
+                    engineRepository.destroyEngine()
+                    _state.update { it.copy(isEngineLoading = false) }
                 }
             }
             false -> {
-                llmModelEngineRepository.initializeEngine(File(_state.value.selectedModelEntity.path)).collect { either ->
-                    either.onRight {
-
+                engineRepository.initializeEngine(_state.value.selectedLlm!!).onStart {
+                    _state.update { it.copy(engineTitle = "Enabling") }
+                }.onEach { either ->
+                    either.onRight { processStatus ->
+                        when (processStatus) {
+                            is ProcessStatus.OnProcess -> {
+                                _state.update { it.copy(engineStatus = processStatus.process) }
+                            }
+                            ProcessStatus.OnCompletion -> {
+                                _state.update { it.copy(engineStatus = "Complete", isEngineLoading = false) }
+                            }
+                        }
+                    }.onLeft { error ->
+                        _state.update { it.copy(isEngineLoading = false) }
+                        _effect.send(Effect.ShowSnackBar(error))
                     }
-                    _state.update { it.copy(isModelEngineLoading = false) }
-                }
+                }.launchIn(viewModelScope)
             }
         }
     }
 
-    private fun upsertConversationButton() = viewModelScope.launch {
-        val conversationEntity = ConversationEntity(
-            title = _state.value.conversationNameTextField
+    private fun selectModel(llm: LlmEntity) {
+        val configuration = _state.value.configuration.copy(
+            selectedLlmId = llm.id
         )
-        llmModelEngineRepository.upsertConversation(conversationEntity).collect { either ->
-            either.onRight {
-                _state.update { it.copy(conversationNameTextField = "") }
-            }.onLeft { error ->
-                navigationDisplayEvent.sendEvent(Event.ShowSnackBar(error))
+        engineRepository.setConfiguration(configuration).onEach { either ->
+            either.onLeft { error ->
+                _effect.send(Effect.ShowSnackBar(error))
             }
-        }
+        }.launchIn(viewModelScope)
+    }
+
+    private fun processBackendChip(backend: LlmBackend) {
+        val configuration = _state.value.configuration.copy(
+            processing = backend
+        )
+        engineRepository.setConfiguration(configuration).onEach { either ->
+            either.onLeft { error ->
+                _effect.send(Effect.ShowSnackBar(error))
+            }
+        }.launchIn(viewModelScope)
+    }
+
+    private fun visionBackendChip(backend: LlmBackend) {
+        val configuration = _state.value.configuration.copy(
+            vision = backend
+        )
+        engineRepository.setConfiguration(configuration).onEach { either ->
+            either.onLeft { error ->
+                _effect.send(Effect.ShowSnackBar(error))
+            }
+        }.launchIn(viewModelScope)
     }
 }

@@ -1,20 +1,17 @@
 package com.a.agent.presentation.home
 
-import com.a.agent.data.local.ModelEntity
-import com.a.agent.domain.model.LlmModelEngineBackend
+import com.a.agent.data.local.llm.LlmEntity
+import com.a.agent.domain.model.LlmBackend
 
 sealed interface HomeAction {
-    data object DownloadedModelBottomSheet: HomeAction
-    data class SelectModel(val modelEntity: ModelEntity): HomeAction
+    data object UpdatePermission: HomeAction
 
-    data object LlmModelEngineConfigurationBottomSheet: HomeAction
-    data class ProcessBackendChip(val backend: LlmModelEngineBackend): HomeAction
-    data class VisionBackendChip(val backend: LlmModelEngineBackend): HomeAction
-    data class MaxNumTokens(val tokens: Int): HomeAction
+    data object ToggleEngine: HomeAction
 
-    data object ToggleModelEngine: HomeAction
+    data object DownloadedLlmBottomSheetVisibility: HomeAction
+    data class SelectModel(val llm: LlmEntity): HomeAction
 
-    data object UpsertConversationBottomSheet: HomeAction
-    data class ConversationNameTextField(val name: String): HomeAction
-    data object UpsertConversationButton: HomeAction
+    data object ConfigurationBottomSheetVisibility: HomeAction
+    data class ProcessBackendChip(val backend: LlmBackend): HomeAction
+    data class VisionBackendChip(val backend: LlmBackend): HomeAction
 }

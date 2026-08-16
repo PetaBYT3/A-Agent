@@ -1,39 +1,26 @@
 package com.a.agent.presentation.util
 
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
+import android.Manifest
+import android.os.Build
 
-data class AppPermissionState(
-    val isGranted: Boolean,
-    val requestPermission: () -> Unit
-)
+private val currentBuildVersionSdkInt = Build.VERSION.SDK_INT
+private val isAndroid13OrAbove = currentBuildVersionSdkInt >= Build.VERSION_CODES.TIRAMISU
+private val isAndroid10OrAbove = currentBuildVersionSdkInt >= Build.VERSION_CODES.Q
 
-@Composable
-fun rememberAppPermissionState(
-    permission: String
-): AppPermissionState {
-    val context = LocalContext.current
+enum class PermissionRequest {
+    Notification,
+    Storage;
 
-    var isGranted by remember {
-        mutableStateOf(ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED)
-    }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted = it }
-    )
-
-    val appPermissionState = AppPermissionState(
-        isGranted = isGranted,
-        requestPermission = { permissionLauncher.launch(permission) }
-    )
-
-    return appPermissionState
+    val permissions: Array<String>
+        get() = when (this) {
+            Notification -> {
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            Storage -> {
+                arrayOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            }
+        }
 }

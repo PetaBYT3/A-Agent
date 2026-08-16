@@ -19,15 +19,21 @@ fileKitVersion = "0.14.2"
 coilVersion = "2.7.0"
 zoomableImageCoilVersion = "0.19.0"
 splashVersion = "1.2.0"
-navigationVersion = "1.1.4"
+navigationVersion = "1.1.5"
 materialIconExtendedVersion = "1.7.8"
 reorderableVersion = "3.1.0"
-firebaseBomVersion = "34.16.0"
-ktorVersion = "3.5.1"
+playServiceAuthVersion = "21.6.0"
+apiClientVersion = "2.9.0"
+apiServiceDriveVersion = "v3-rev20220815-2.0.0"
+credentialVersion = "1.6.0"
+credentialPlayServiceAuthVersion = "1.6.0"
+googleIdVersion = "1.2.0"
+firebaseBomVersion = "34.17.0"
+ktorVersion = "3.5.2"
 cameraxVersion = "1.6.1"
-tasksGenAiVersion = "0.10.35"
-litertVersion = "0.14.0"
+litertVersion = "0.15.0"
 
+secretsGradleVersion = "2.0.1"
 kspVersion = "2.3.6"
 googleServicesVersion = "4.5.0"
 
@@ -95,6 +101,14 @@ material-icon-extended = { module = "androidx.compose.material:material-icons-ex
 #Reorderable
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderableVersion" }
 
+#Google API
+google-play-service-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServiceAuthVersion" }
+google-api-client = { module = "com.google.api-client:google-api-client-android", version.ref = "apiClientVersion" }
+google-api-service-drive = { module = "com.google.apis:google-api-services-drive", version.ref = "apiServiceDriveVersion" }
+credential = { module = "androidx.credentials:credentials", version.ref = "credentialVersion" }
+credential-play-service-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialPlayServiceAuthVersion" }
+google-id = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleIdVersion" }
+
 #Firebase
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
@@ -110,16 +124,15 @@ camerax-two = { module = "androidx.camera:camera-camera2", version.ref = "camera
 camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraxVersion" }
 camerax-view = { module = "androidx.camera:camera-view", version.ref = "cameraxVersion" }
 
-#MediaPipe GenAI
-mediapipe-tasks-genai = { module = "com.google.mediapipe:tasks-genai", version.ref = "tasksGenAiVersion" }
-mediapipe-tasks-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "tasksGenAiVersion" }
-
 #LiteRT LM
 litert-genai = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+
+#Secret Gradle
+secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secretsGradleVersion" }
 
 #Ksp
 ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
