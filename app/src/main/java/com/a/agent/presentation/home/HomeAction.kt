@@ -12,6 +12,7 @@ sealed interface HomeAction {
     data class SelectModel(val llm: LlmEntity): HomeAction
 
     data object ConfigurationBottomSheetVisibility: HomeAction
+    data class AutomaticSwitch(val isAutomatic: Boolean): HomeAction
     data class ProcessBackendChip(val backend: LlmBackend): HomeAction
     data class VisionBackendChip(val backend: LlmBackend): HomeAction
 }

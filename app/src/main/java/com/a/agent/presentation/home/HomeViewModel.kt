@@ -91,6 +91,7 @@ class HomeViewModel(
             HomeAction.ConfigurationBottomSheetVisibility -> {
                 _state.update { it.copy(isConfigurationBottomSheetVisible = !it.isConfigurationBottomSheetVisible) }
             }
+            is HomeAction.AutomaticSwitch -> automaticSwitch(action.isAutomatic)
             is HomeAction.ProcessBackendChip -> processBackendChip(action.backend)
             is HomeAction.VisionBackendChip -> visionBackendChip(action.backend)
         }
@@ -130,9 +131,20 @@ class HomeViewModel(
     }
 
     private fun selectModel(llm: LlmEntity) {
-        val configuration = _state.value.configuration.copy(
+        val configuration = _state.value.configuration?.copy(
             selectedLlmId = llm.id
-        )
+        ) ?: return
+        engineRepository.setConfiguration(configuration).onEach { either ->
+            either.onLeft { error ->
+                _effect.send(Effect.ShowSnackBar(error))
+            }
+        }.launchIn(viewModelScope)
+    }
+
+    private fun automaticSwitch(isAutomatic: Boolean) {
+        val configuration = _state.value.configuration?.copy(
+            isAutomatic = isAutomatic
+        ) ?: return
         engineRepository.setConfiguration(configuration).onEach { either ->
             either.onLeft { error ->
                 _effect.send(Effect.ShowSnackBar(error))
@@ -141,9 +153,9 @@ class HomeViewModel(
     }
 
     private fun processBackendChip(backend: LlmBackend) {
-        val configuration = _state.value.configuration.copy(
+        val configuration = _state.value.configuration?.copy(
             processing = backend
-        )
+        ) ?: return
         engineRepository.setConfiguration(configuration).onEach { either ->
             either.onLeft { error ->
                 _effect.send(Effect.ShowSnackBar(error))
@@ -152,9 +164,9 @@ class HomeViewModel(
     }
 
     private fun visionBackendChip(backend: LlmBackend) {
-        val configuration = _state.value.configuration.copy(
+        val configuration = _state.value.configuration?.copy(
             vision = backend
-        )
+        ) ?: return
         engineRepository.setConfiguration(configuration).onEach { either ->
             either.onLeft { error ->
                 _effect.send(Effect.ShowSnackBar(error))

@@ -82,10 +82,17 @@ class EngineRepositoryImpl(
 
             emit(Either.Right(ProcessStatus.OnProcess("Initialize Engine...")))
             val configuration = dataStore.configuration.first()
-            val engineConfig = EngineConfig(
-                modelPath = llmEntity.path,
-                backend = configuration.processing.getBackend()
-            )
+            val engineConfig = if (!configuration.isAutomatic) {
+                EngineConfig(
+                    modelPath = llmEntity.path,
+                    backend = configuration.processing.getBackend(),
+                    visionBackend = configuration.vision.getBackend()
+                )
+            } else {
+                EngineConfig(
+                    modelPath = llmEntity.path
+                )
+            }
             engine = Engine(engineConfig)
             engine?.initialize()
 

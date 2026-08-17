@@ -4,8 +4,8 @@ import android.app.Application
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.a.agent.domain.model.Configuration
@@ -21,9 +21,9 @@ class DataStore(
 ) {
     companion object {
         val SelectedModelId = stringPreferencesKey("selectedModelId")
+        val IsAutomatic = booleanPreferencesKey("IsAutomatic")
         val ProcessingBackend = stringPreferencesKey("processingBackend")
         val VisionBackend = stringPreferencesKey("visionBackend")
-        val MaxNumTokens = intPreferencesKey("maxNumTokens")
 
         val TTSLanguage = stringPreferencesKey("ttsLanguage")
         val STTLanguage = stringPreferencesKey("sttLanguage")
@@ -31,24 +31,24 @@ class DataStore(
 
     val configuration: Flow<Configuration> = application.dataStore.data.map {
         val selectedModelId = it[SelectedModelId]
+        val isAutomatic = it[IsAutomatic]
         val processingBackend = it[ProcessingBackend]
         val visionBackend = it[VisionBackend]
-        val maxNumTokens = it[MaxNumTokens]
 
         Configuration(
             selectedLlmId = selectedModelId ?: "",
-            processing = LlmBackend.valueOf(processingBackend ?: LlmBackend.GPU.name),
-            vision = LlmBackend.valueOf(visionBackend ?: LlmBackend.GPU.name),
-            maxNumTokens = maxNumTokens ?: 128
+            isAutomatic = isAutomatic ?: true,
+            processing = LlmBackend.valueOf(processingBackend ?: LlmBackend.CPU.name),
+            vision = LlmBackend.valueOf(visionBackend ?: LlmBackend.CPU.name)
         )
     }
 
     suspend fun setLlmModelEngineConfiguration(configuration: Configuration) {
         application.dataStore.edit {
             it[SelectedModelId] = configuration.selectedLlmId
+            it[IsAutomatic] = configuration.isAutomatic
             it[ProcessingBackend] = configuration.processing.name
             it[VisionBackend] = configuration.vision.name
-            it[MaxNumTokens] = configuration.maxNumTokens
         }
     }
 

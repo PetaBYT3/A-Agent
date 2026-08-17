@@ -22,7 +22,7 @@ import com.a.agent.domain.repository.LlmRepository
 import com.a.agent.domain.repository.PermissionRepository
 import com.a.agent.domain.repository.SttRepository
 import com.a.agent.domain.repository.TtsRepository
-import com.a.agent.presentation.chatconversation.ConversationViewModel
+import com.a.agent.presentation.conversation.ConversationViewModel
 import com.a.agent.presentation.conversationmanager.ConversationManagerViewModel
 import com.a.agent.presentation.home.HomeViewModel
 import com.a.agent.presentation.llm.LlmViewModel

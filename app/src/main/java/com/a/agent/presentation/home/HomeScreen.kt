@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import com.a.agent.R
 import com.a.agent.data.local.conversation.ConversationDetailEntity
 import com.a.agent.data.local.conversation.ConversationEntity
 import com.a.agent.data.local.llm.LlmEntity
@@ -156,6 +158,19 @@ private fun Screen(
         isBottomSheetVisible = state.isConfigurationBottomSheetVisible,
         title = "Configuration",
         content = {
+            item {
+                CustomSegmentedListItem(
+                    content = { Text(text = "Automatic Configuration") },
+                    supportingContent = { Text(text = stringResource(R.string.automatic_warning)) },
+                    trailingContent = {
+                        Switch(
+                            checked = state.configuration?.isAutomatic ?: true,
+                            onCheckedChange = { onAction(HomeAction.AutomaticSwitch(it)) }
+                        )
+                    }
+                )
+            }
+            spacer()
             listTitle("Processing Backend")
             item {
                 SingleChoiceSegmentedButtonRow(
@@ -164,13 +179,14 @@ private fun Screen(
                 ) {
                     LlmBackend.entries.fastForEachIndexed { index, backend ->
                         SegmentedButton(
-                            selected = backend == state.configuration.processing,
+                            selected = backend == state.configuration?.processing,
                             onClick = { onAction(HomeAction.ProcessBackendChip(backend)) },
                             shape = SegmentedButtonDefaults.itemShape(
                                 index = index,
                                 count = LlmBackend.entries.size
                             ),
-                            label = { Text(text = backend.name) }
+                            label = { Text(text = backend.name) },
+                            enabled = state.configuration?.isAutomatic == false
                         )
                     }
                 }
@@ -184,13 +200,14 @@ private fun Screen(
                 ) {
                     LlmBackend.entries.fastForEachIndexed { index, backend ->
                         SegmentedButton(
-                            selected = backend == state.configuration.vision,
+                            selected = backend == state.configuration?.vision,
                             onClick = { onAction(HomeAction.VisionBackendChip(backend)) },
                             shape = SegmentedButtonDefaults.itemShape(
                                 index = index,
                                 count = LlmBackend.entries.size
                             ),
-                            label = { Text(text = backend.name) }
+                            label = { Text(text = backend.name) },
+                            enabled = state.configuration?.isAutomatic == false
                         )
                     }
                 }
@@ -481,12 +498,12 @@ private fun Preview() {
         snackBarHostState = remember { SnackbarHostState() },
         state = HomeState(
             isConfigurationLoading = false,
-            isConfigurationBottomSheetVisible = false,
+            isConfigurationBottomSheetVisible = true,
             configuration = Configuration(
                 selectedLlmId = "123",
+                isAutomatic = true,
                 processing = LlmBackend.GPU,
-                vision = LlmBackend.GPU,
-                maxNumTokens = 128
+                vision = LlmBackend.GPU
             ),
             selectedLlm = LlmEntity(
                 name = "Model Preview",

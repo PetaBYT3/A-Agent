@@ -1,4 +1,4 @@
-package com.a.agent.presentation.chatconversation.component
+package com.a.agent.presentation.conversation.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

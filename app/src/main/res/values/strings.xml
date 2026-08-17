@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">A Agent</string>
 
+    <string name="automatic_warning">
+        Warning: Manual configuration can cause system instability and fatal crashes.
+    </string>
+
     <string name="backup_export">
         Backup all of your data into importable backup file
     </string>

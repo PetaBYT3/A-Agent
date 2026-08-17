@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalCoroutinesApi::class)
 
-package com.a.agent.presentation.chatconversation
+package com.a.agent.presentation.conversation
 
 import android.app.Application
 import androidx.lifecycle.ViewModel

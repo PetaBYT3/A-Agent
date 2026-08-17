@@ -1,4 +1,4 @@
-package com.a.agent.presentation.chatconversation
+package com.a.agent.presentation.conversation
 
 import com.a.agent.data.local.chat.ChatEntity
 import com.a.agent.data.local.conversation.ConversationEntity

@@ -1,4 +1,4 @@
-package com.a.agent.presentation.chatconversation
+package com.a.agent.presentation.conversation
 
 import io.github.vinceglb.filekit.PlatformFile
 import java.util.Locale

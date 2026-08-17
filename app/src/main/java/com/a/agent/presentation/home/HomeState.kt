@@ -17,7 +17,7 @@ data class HomeState(
     val isConfigurationLoading: Boolean = true,
     val isConfigurationError: String? = null,
     val isConfigurationBottomSheetVisible: Boolean = false,
-    val configuration: Configuration = Configuration.Empty,
+    val configuration: Configuration? = null,
     val selectedLlm: LlmEntity? = null,
 
     val isDownloadedLlmBottomSheetVisible: Boolean = false,

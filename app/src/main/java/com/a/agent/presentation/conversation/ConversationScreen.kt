@@ -1,4 +1,4 @@
-package com.a.agent.presentation.chatconversation
+package com.a.agent.presentation.conversation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -67,8 +67,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import coil.compose.AsyncImage
 import com.a.agent.data.local.chat.ChatEntity
 import com.a.agent.data.local.conversation.ConversationEntity
-import com.a.agent.presentation.chatconversation.component.ChatBubble
-import com.a.agent.presentation.chatconversation.component.ChatLoading
+import com.a.agent.presentation.conversation.component.ChatBubble
+import com.a.agent.presentation.conversation.component.ChatLoading
 import com.a.agent.presentation.navigation.Effect
 import com.a.agent.presentation.navigation.NavigationRoute
 import com.a.agent.presentation.navigation.popBackStack

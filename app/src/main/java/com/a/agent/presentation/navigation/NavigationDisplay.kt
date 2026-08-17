@@ -20,7 +20,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.a.agent.presentation.chatconversation.TextToTextScreen
+import com.a.agent.presentation.conversation.TextToTextScreen
 import com.a.agent.presentation.conversationmanager.ConversationManagerScreen
 import com.a.agent.presentation.home.HomeScreen
 import com.a.agent.presentation.imageview.ImageViewScreen
