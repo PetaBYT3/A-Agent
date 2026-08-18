@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface LlmRepository {
+    suspend fun validateSelectedLlm()
+
     fun getMetadataFromUrl(url: String): Flow<Either<String, LlmMetadata>>
     fun getMetadataFromLocal(platformFile: PlatformFile): Flow<Either<String, LlmMetadata>>
 

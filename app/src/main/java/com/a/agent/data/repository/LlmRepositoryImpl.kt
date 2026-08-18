@@ -1,9 +1,12 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.a.agent.data.repository
 
 import android.app.Application
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import arrow.core.Either
+import com.a.agent.data.local.DataStore
 import com.a.agent.data.local.Database
 import com.a.agent.data.local.llm.LlmEntity
 import com.a.agent.data.local.llm.LlmSource
@@ -22,6 +25,7 @@ import io.github.vinceglb.filekit.name
 import io.github.vinceglb.filekit.size
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +44,7 @@ class LlmRepositoryImpl(
     private val application: Application,
     private val llmApi: LlmApi,
     private val database: Database,
+    private val dataStore: DataStore,
     private val directoryRepository: DirectoryRepository
 ): LlmRepository {
     init {
@@ -75,6 +80,23 @@ class LlmRepositoryImpl(
             initialLlm.forEach { modelEntity ->
                 database.llmDao.upsertLlm(modelEntity)
             }
+        }
+    }
+
+    override suspend fun validateSelectedLlm() {
+        val configuration = dataStore.configuration.first()
+        if (configuration.selectedLlmId.isEmpty()) return
+        val llmEntity = database.llmDao.getLlm(configuration.selectedLlmId).first() ?: return
+
+        val file = File(llmEntity.path)
+        val expectedSize = llmEntity.totalBytes
+        val actualSize = file.length()
+
+        if (!file.exists() || expectedSize != actualSize) {
+            val updatedConfiguration = configuration.copy(
+                selectedLlmId = ""
+            )
+            dataStore.setLlmModelEngineConfiguration(updatedConfiguration)
         }
     }
 
@@ -240,6 +262,27 @@ class LlmRepositoryImpl(
     }
 
     override fun deleteOrphanFile(): Flow<Either<String, String>> {
-        TODO("Not yet implemented")
+        return flow<Either<String, String>> {
+            val llmDirectoryFiles = File(application.getExternalFilesDir(null), Directory.Llms.absolutePath).listFiles()
+            if (llmDirectoryFiles == null) {
+                emit(Either.Right("No Orphan Files"))
+                return@flow
+            }
+
+            val downloadedLlmPath = database.llmDao.getLlms().first().filter { llmEntity ->
+                val expectedSize = llmEntity.totalBytes.toMegaByte()
+                val actualSize = File(llmEntity.path).length().toMegaByte()
+                expectedSize == actualSize
+            }.map { File(it.path).name }.toSet()
+
+            llmDirectoryFiles.forEach { file ->
+                if (file.name !in downloadedLlmPath) {
+                    file.delete()
+                }
+            }
+            emit(Either.Right("All Orphan Files Deleted"))
+        }.catch { throwable ->
+            emit(Either.Left(throwable.toMessage()))
+        }.flowOn(Dispatchers.IO)
     }
 }

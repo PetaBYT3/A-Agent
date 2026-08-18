@@ -12,11 +12,13 @@ import com.a.agent.domain.model.BackupMetadata
 import com.a.agent.domain.model.Directory
 import com.a.agent.domain.model.ProcessStatus
 import com.a.agent.domain.repository.BackupRepository
+import com.a.agent.domain.repository.LlmRepository
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.toAndroidUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
@@ -30,6 +32,7 @@ import kotlin.time.Clock
 
 class BackupRepositoryImpl(
     private val application: Application,
+    private val llmRepository: LlmRepository,
     private val database: Database
 ): BackupRepository {
     private fun zipMetadataFile(
@@ -85,6 +88,8 @@ class BackupRepositoryImpl(
 
     override fun exportBackup(platformFile: PlatformFile): Flow<Either<String, ProcessStatus<Pair<String, Float>>>> {
         return flow {
+            llmRepository.deleteOrphanFile().collect()
+
             val targetOutputStream = application.contentResolver.openOutputStream(platformFile.toAndroidUri())
             if (targetOutputStream == null) {
                 emit(Either.Left("Fail To Open Directory Path"))

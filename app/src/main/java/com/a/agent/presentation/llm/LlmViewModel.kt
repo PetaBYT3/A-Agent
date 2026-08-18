@@ -24,7 +24,7 @@ class LlmViewModel(
     private val _state = MutableStateFlow(LlmState())
     val state = _state.onStart {
         initialize()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LlmState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(1_000), LlmState())
 
     private val _effect = Channel<Effect>(Channel.CONFLATED)
     val effect = _effect.receiveAsFlow()
@@ -73,11 +73,22 @@ class LlmViewModel(
 
     fun onAction(action: LlmAction) {
         when (action) {
+            LlmAction.DeleteOrphanFileButton -> deleteOrphanButton()
             LlmAction.NotificationPermissionDeniedBottomSheet -> {
                 _state.update { it.copy(isNotificationPermissionDeniedBottomSheetVisible = !it.isNotificationPermissionDeniedBottomSheetVisible) }
             }
             is LlmAction.ToggleDownload -> toggleDownload(action.llmEntity)
         }
+    }
+
+    private fun deleteOrphanButton() {
+        llmRepository.deleteOrphanFile().onEach { either ->
+            either.onRight { message ->
+                _effect.send(Effect.ShowSnackBar(message))
+            }.onLeft { error ->
+                _effect.send(Effect.ShowSnackBar(error))
+            }
+        }.launchIn(viewModelScope)
     }
 
     private fun toggleDownload(llm: LlmEntity) {

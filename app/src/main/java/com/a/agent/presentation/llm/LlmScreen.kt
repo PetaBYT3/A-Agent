@@ -17,8 +17,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -50,6 +54,7 @@ import com.a.agent.presentation.navigation.popBackStack
 import com.a.agent.presentation.util.CustomSnackBar
 import com.a.agent.presentation.util.component.CustomContentBottomSheet
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
+import com.a.agent.presentation.util.component.CustomPopupMenu
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.SupportingText
 import com.a.agent.presentation.util.openApplicationSettings
@@ -100,6 +105,23 @@ private fun Screen(
             CustomTopAppBar(
                 onNavigationClick = { navBackStack.popBackStack() },
                 title = "LLM",
+                action = {
+                    CustomPopupMenu(
+                        content = { expanded ->
+                            IconButton(
+                                onClick = { expanded() },
+                                content = { Icon(Icons.Rounded.MoreVert, null) }
+                            )
+                        },
+                        items = listOf(
+                            Triple(
+                                first = { onAction(LlmAction.DeleteOrphanFileButton) },
+                                second = Icons.Rounded.Delete,
+                                third = "Delete Orphan Files"
+                            )
+                        )
+                    )
+                }
             )
         },
         content = { innerPadding ->

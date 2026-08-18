@@ -32,12 +32,14 @@ class HomeViewModel(
     private val _state = MutableStateFlow(HomeState())
     val state = _state.onStart {
         initialize()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(1_000), HomeState())
 
     private val _effect = Channel<Effect>(Channel.CONFLATED)
     val effect = _effect.receiveAsFlow()
 
     private fun initialize() {
+        viewModelScope.launch { llmRepository.validateSelectedLlm() }
+
         permissionRepository.isNotificationPermissionGranted.onEach { isNotificationPermissionGranted ->
             _state.update { it.copy(isNotificationPermissionGranted = isNotificationPermissionGranted) }
         }.launchIn(viewModelScope)
