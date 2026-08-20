@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val backupRepository: BackupRepository
@@ -31,6 +32,9 @@ class SettingsViewModel(
                 _state.update { it.copy(isExportBackupBottomSheetVisible = false, isExportBackupComplete = false) }
             }
             is SettingsAction.ImportBackupButton -> importBackupButton(action.backupFile)
+            is SettingsAction.ShowSnackBar -> {
+                viewModelScope.launch { _effect.send(Effect.ShowSnackBar(action.message)) }
+            }
         }
     }
 

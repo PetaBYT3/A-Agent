@@ -25,6 +25,9 @@ class DataStore(
         val ProcessingBackend = stringPreferencesKey("processingBackend")
         val VisionBackend = stringPreferencesKey("visionBackend")
 
+        val EnableDefaultKey = booleanPreferencesKey("enableDefaultKey")
+        val AuthorizationKey = stringPreferencesKey("authorizationKey")
+
         val TTSLanguage = stringPreferencesKey("ttsLanguage")
         val STTLanguage = stringPreferencesKey("sttLanguage")
     }
@@ -49,6 +52,26 @@ class DataStore(
             it[IsAutomatic] = configuration.isAutomatic
             it[ProcessingBackend] = configuration.processing.name
             it[VisionBackend] = configuration.vision.name
+        }
+    }
+
+    val enableDefaultKey: Flow<Boolean> = application.dataStore.data.map {
+        it[EnableDefaultKey] ?: true
+    }
+
+    suspend fun setEnableDefaultKey(enabled: Boolean) {
+        application.dataStore.edit {
+            it[EnableDefaultKey] = enabled
+        }
+    }
+
+    val authorizationKey: Flow<String> = application.dataStore.data.map {
+        it[AuthorizationKey] ?: ""
+    }
+
+    suspend fun setAuthorizationKey(key: String) {
+        application.dataStore.edit {
+            it[AuthorizationKey] = key
         }
     }
 

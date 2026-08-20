@@ -7,4 +7,6 @@ sealed interface SettingsAction {
     data object ExportBackupDoneButton: SettingsAction
 
     data class ImportBackupButton(val backupFile: PlatformFile): SettingsAction
+
+    data class ShowSnackBar(val message: String): SettingsAction
 }

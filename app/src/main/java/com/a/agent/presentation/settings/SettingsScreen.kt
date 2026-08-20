@@ -286,11 +286,15 @@ private fun Content(
         val contacts = listOf(
             Quadruple(
                 first = {
-                    val email = "andreahussanini.2103@gmail.com"
-                    val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = "mailto:$email".toUri()
+                    try {
+                        val email = "andreahussanini.2103@gmail.com"
+                        val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = "mailto:$email".toUri()
+                        }
+                        context.startActivity(emailIntent)
+                    } catch (e: Exception) {
+                        onAction(SettingsAction.ShowSnackBar("No App Can Handle This Action"))
                     }
-                    context.startActivity(emailIntent)
                 },
                 second = Icons.Rounded.Email,
                 third = "Email",

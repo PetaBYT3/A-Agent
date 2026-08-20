@@ -8,6 +8,10 @@ data class LlmState(
     val isNotificationPermissionDeniedBottomSheetVisible: Boolean = false,
     val downloadState: Map<String, Pair<String, DownloadInfo>> = emptyMap(),
 
+    val isAuthorizationKeyBottomSheetVisible: Boolean = false,
+    val isEnableDefaultAuthorizationKey: Boolean = true,
+    val authorizationKeyTextField: String = "",
+
     val isAllLlmLoading: Boolean = true,
     val isAllLlmError: String? = null,
     val allLlm: List<LlmEntity> = emptyList(),

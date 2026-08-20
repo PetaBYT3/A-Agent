@@ -13,12 +13,12 @@ import com.a.agent.data.local.llm.LlmSource
 import com.a.agent.data.mapper.toMessage
 import com.a.agent.data.remote.DownloadInfo
 import com.a.agent.data.remote.LlmApi
+import com.a.agent.data.service.DownloadService
 import com.a.agent.data.util.toMegaByte
 import com.a.agent.domain.model.Directory
 import com.a.agent.domain.model.LlmMetadata
 import com.a.agent.domain.repository.DirectoryRepository
 import com.a.agent.domain.repository.LlmRepository
-import com.a.agent.service.DownloadService
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.toAndroidUri
 import io.github.vinceglb.filekit.name
@@ -47,6 +47,8 @@ class LlmRepositoryImpl(
     private val dataStore: DataStore,
     private val directoryRepository: DirectoryRepository
 ): LlmRepository {
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     init {
         CoroutineScope(Dispatchers.IO).launch {
             checkAndUpsertInitialData()
@@ -81,6 +83,18 @@ class LlmRepositoryImpl(
                 database.llmDao.upsertLlm(modelEntity)
             }
         }
+    }
+
+    override val enableDefaultKey: Flow<Boolean> = dataStore.enableDefaultKey
+
+    override suspend fun setEnableDefaultKey(enabled: Boolean) {
+        dataStore.setEnableDefaultKey(enabled)
+    }
+
+    override val authorizationKey: Flow<String> = dataStore.authorizationKey
+
+    override suspend fun setAuthorizationKey(key: String) {
+        dataStore.setAuthorizationKey(key)
     }
 
     override suspend fun validateSelectedLlm() {
@@ -232,14 +246,19 @@ class LlmRepositoryImpl(
                 emit(Either.Right("Download Stopped"))
             } else {
                 startService(serviceIntent)
-                activeDownloadJob[llmEntity.id] = CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-                    _activeDownloadMap.update { it + (llmEntity.id to Pair("", DownloadInfo(0L, 0L, 0f, 0))) }
-                    llmApi.getLlmFile(llmEntity.url, llmEntity.path).collect { downloadInfo ->
-                        _activeDownloadMap.update { it + (llmEntity.id to Pair(llmEntity.fileName, downloadInfo)) }
+                activeDownloadJob[llmEntity.id] = repositoryScope.launch {
+                    try {
+                        _activeDownloadMap.update { it + (llmEntity.id to Pair("", DownloadInfo(0L, 0L, 0f, 0))) }
+                        llmApi.getLlmFile(llmEntity.url, llmEntity.path).catch { it.printStackTrace() }.collect { downloadInfo ->
+                            _activeDownloadMap.update { it + (llmEntity.id to Pair(llmEntity.fileName, downloadInfo)) }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    } finally {
+                        database.llmDao.upsertLlm(llmEntity.copy(isDownloaded = true))
+                        _activeDownloadMap.update { it - llmEntity.id }
+                        stopService(serviceIntent)
                     }
-                    database.llmDao.upsertLlm(llmEntity.copy(isDownloaded = true))
-                    _activeDownloadMap.update { it - llmEntity.id }
-                    stopService(serviceIntent)
                 }
                 emit(Either.Right("Download Started"))
             }

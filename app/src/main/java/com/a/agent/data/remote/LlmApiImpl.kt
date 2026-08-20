@@ -1,6 +1,7 @@
 package com.a.agent.data.remote
 
 import com.a.agent.BuildConfig
+import com.a.agent.data.local.DataStore
 import com.a.agent.data.util.UnavailableDataException
 import com.a.agent.util.VerEx
 import io.ktor.client.HttpClient
@@ -14,13 +15,23 @@ import io.ktor.http.contentLength
 import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import java.io.File
 
 class LlmApiImpl(
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
+    private val dataStore: DataStore
 ): LlmApi {
+    private suspend fun huggingFaceToken(): String  {
+        return if (dataStore.enableDefaultKey.first()) {
+            dataStore.authorizationKey.first()
+        } else {
+            BuildConfig.HUGGINGFACE_TOKEN
+        }
+    }
+
     private val fileNameRegex = VerEx()
         .add("filename=")
         .add("\"?")
@@ -30,7 +41,7 @@ class LlmApiImpl(
 
     override suspend fun getLlmMetadata(url: String): LlmMetadataDto {
         val response = httpClient.head(url) {
-            header("Authorization", "Bearer ${BuildConfig.HUGGINGFACE_TOKEN}")
+            header("Authorization", "Bearer ${huggingFaceToken()}")
         }
 
         val fileName = response.headers[HttpHeaders.ContentDisposition]?.let {
@@ -52,7 +63,7 @@ class LlmApiImpl(
     override suspend fun getLlmFile(url: String, path: String): Flow<DownloadInfo> {
         return flow {
             httpClient.prepareGet(url) {
-                header("Authorization", "Bearer ${BuildConfig.HUGGINGFACE_TOKEN}")
+                header("Authorization", "Bearer ${huggingFaceToken()}")
                 timeout {
                     requestTimeoutMillis = Long.MAX_VALUE
                 }

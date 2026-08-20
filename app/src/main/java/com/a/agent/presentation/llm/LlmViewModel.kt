@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class LlmViewModel(
     private val permissionRepository: PermissionRepository,
@@ -36,6 +37,14 @@ class LlmViewModel(
 
         llmRepository.activeDownloadMap.onEach { map ->
             _state.update { it.copy(downloadState = map) }
+        }.launchIn(viewModelScope)
+
+        llmRepository.enableDefaultKey.onEach { isEnabled ->
+            _state.update { it.copy(isEnableDefaultAuthorizationKey = isEnabled) }
+        }.launchIn(viewModelScope)
+
+        llmRepository.authorizationKey.onEach { authorizationKey ->
+            _state.update { it.copy(authorizationKeyTextField = authorizationKey) }
         }.launchIn(viewModelScope)
 
         llmRepository.getLlms().onEach { either ->
@@ -73,10 +82,20 @@ class LlmViewModel(
 
     fun onAction(action: LlmAction) {
         when (action) {
-            LlmAction.DeleteOrphanFileButton -> deleteOrphanButton()
             LlmAction.NotificationPermissionDeniedBottomSheet -> {
                 _state.update { it.copy(isNotificationPermissionDeniedBottomSheetVisible = !it.isNotificationPermissionDeniedBottomSheetVisible) }
             }
+            LlmAction.DeleteOrphanFileButton -> deleteOrphanButton()
+            LlmAction.AuthorizationKeyBottomSheet -> {
+                _state.update { it.copy(isAuthorizationKeyBottomSheetVisible = !it.isAuthorizationKeyBottomSheetVisible) }
+            }
+            is LlmAction.EnableDefaultAuthorizationKeySwitch -> {
+                viewModelScope.launch { llmRepository.setEnableDefaultKey(action.enabled) }
+            }
+            is LlmAction.AuthorizationKeyTextField -> {
+                _state.update { it.copy(authorizationKeyTextField = action.key) }
+            }
+            LlmAction.ButtonSaveAuthorizationKey -> buttonSaveAuthorizationKey()
             is LlmAction.ToggleDownload -> toggleDownload(action.llmEntity)
         }
     }
@@ -89,6 +108,12 @@ class LlmViewModel(
                 _effect.send(Effect.ShowSnackBar(error))
             }
         }.launchIn(viewModelScope)
+    }
+
+    private fun buttonSaveAuthorizationKey() {
+        viewModelScope.launch {
+            llmRepository.setAuthorizationKey(_state.value.authorizationKeyTextField)
+        }
     }
 
     private fun toggleDownload(llm: LlmEntity) {

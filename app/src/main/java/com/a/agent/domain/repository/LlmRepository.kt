@@ -10,6 +10,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface LlmRepository {
+    val enableDefaultKey: Flow<Boolean>
+    suspend fun setEnableDefaultKey(enabled: Boolean)
+    val authorizationKey: Flow<String>
+    suspend fun setAuthorizationKey(key: String)
+
     suspend fun validateSelectedLlm()
 
     fun getMetadataFromUrl(url: String): Flow<Either<String, LlmMetadata>>

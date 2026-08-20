@@ -37,7 +37,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.DownloadService" android:exported="false" android:foregroundServiceType="dataSync" />
+        <service android:name=".data.service.DownloadService" android:exported="false" android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

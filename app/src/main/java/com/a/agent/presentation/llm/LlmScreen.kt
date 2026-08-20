@@ -18,6 +18,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
@@ -26,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,12 +36,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import com.a.agent.R
 import com.a.agent.data.local.llm.LlmEntity
 import com.a.agent.data.local.llm.LlmSource
 import com.a.agent.data.remote.DownloadInfo
@@ -55,8 +59,12 @@ import com.a.agent.presentation.util.CustomSnackBar
 import com.a.agent.presentation.util.component.CustomContentBottomSheet
 import com.a.agent.presentation.util.component.CustomFloatingActionButton
 import com.a.agent.presentation.util.component.CustomPopupMenu
+import com.a.agent.presentation.util.component.CustomSegmentedListItem
+import com.a.agent.presentation.util.component.CustomTextField
 import com.a.agent.presentation.util.component.CustomTopAppBar
 import com.a.agent.presentation.util.component.SupportingText
+import com.a.agent.presentation.util.component.listTitle
+import com.a.agent.presentation.util.component.spacer
 import com.a.agent.presentation.util.openApplicationSettings
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -118,6 +126,11 @@ private fun Screen(
                                 first = { onAction(LlmAction.DeleteOrphanFileButton) },
                                 second = Icons.Rounded.Delete,
                                 third = "Delete Orphan Files"
+                            ),
+                            Triple(
+                                first = { onAction(LlmAction.AuthorizationKeyBottomSheet) },
+                                second = Icons.Rounded.Key,
+                                third = "Authorization Key"
                             )
                         )
                     )
@@ -155,6 +168,46 @@ private fun Screen(
         confirmText = "Open Settings",
         onConfirm = { openApplicationSettings(context) },
         onCancel = { onAction(LlmAction.NotificationPermissionDeniedBottomSheet) }
+    )
+
+    CustomContentBottomSheet(
+        isBottomSheetVisible = state.isAuthorizationKeyBottomSheetVisible,
+        title = "Authorization Key",
+        content = {
+            item {
+                CustomSegmentedListItem(
+                    content = { Text(text = "Enable Default Key") },
+                    supportingContent = { Text(text = stringResource(R.string.enable_authorization_key)) },
+                    trailingContent = {
+                        Switch(
+                            checked = state.isEnableDefaultAuthorizationKey,
+                            onCheckedChange = {
+                                onAction(
+                                    LlmAction.EnableDefaultAuthorizationKeySwitch(
+                                        it
+                                    )
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+            spacer()
+            listTitle("Your Key")
+            item {
+                CustomTextField(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    label = { Text(text = "HuggingFace Authorization Key") },
+                    value = state.authorizationKeyTextField,
+                    onValueChange = { onAction(LlmAction.AuthorizationKeyTextField(it)) },
+                    enabled = !state.isEnableDefaultAuthorizationKey
+                )
+            }
+        },
+        confirmText = "Save Your Key",
+        onConfirm = { onAction(LlmAction.ButtonSaveAuthorizationKey) },
+        onCancel = { onAction(LlmAction.AuthorizationKeyBottomSheet) },
     )
 }
 
@@ -259,6 +312,7 @@ private fun Preview() {
         navBackStack = rememberNavBackStack(),
         snackBarHostState = remember { SnackbarHostState() },
         state = LlmState(
+            isAuthorizationKeyBottomSheetVisible = true,
             downloadState = mutableMapOf("1" to Pair("Filename", DownloadInfo(0, 0, 0.50f, 0))),
             isAllLlmLoading = false,
             allLlm = listOf(
